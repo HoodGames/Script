@@ -1,0 +1,10 @@
+function Crash()
+while true do
+end
+game:Shutdown()
+end
+if Key  ~= {"00CDA263-5AD4-4C8E-8FC9-E0CBC153B26D", "03JFM623-253V-VF3T-WSD5-102ASMYI85CA"} then
+return Crash()
+else
+ur loadstring
+end
