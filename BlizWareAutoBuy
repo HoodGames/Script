@@ -1,0 +1,23 @@
+local UILibrary = loadstring(game:HttpGet('https://raw.githubusercontent.com/ExecutionerScripts/Ui-Library/main/MainScript.lua'))()
+local MainUI = UILibrary:Load("BlizWare | Auto Buy")
+local AutoBuy = MainUI:CreatePage("Auto Buy",true,true)
+
+local Count = 0
+local Player = game:GetService("Players").LocalPlayer
+
+for i,v in pairs(game:GetService("Workspace").Ignored.Shop:GetChildren()) do
+AutoBuy:CreateButton( v.Name ,function()
+    
+    local Pos = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+    local Teleport = v:FindFirstChild("Head")
+    if Teleport then
+        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = Teleport.CFrame
+        local CD = v:FindFirstChild("ClickDetector")
+        if CD then
+            wait(0.75)
+            fireclickdetector(CD)
+            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = Pos
+        end
+    end
+end)
+end
