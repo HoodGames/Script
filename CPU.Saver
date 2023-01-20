@@ -25,8 +25,8 @@ dvd_logo.Parent = savingFrame
 dvd_logo.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 dvd_logo.BackgroundTransparency = 1.000
 dvd_logo.Position = UDim2.new(0.5, -50, 0.5, -50)
-dvd_logo.Size = UDim2.new(0, 100, 0, 100)
-dvd_logo.Image = ""
+dvd_logo.Size = UDim2.new(0, 0, 0, 0)
+dvd_logo.Image = "http://www.roblox.com/asset/?id=7371850353"
 
 TextLabel.Parent = dvd_logo
 TextLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -37,7 +37,7 @@ TextLabel.Font = Enum.Font.Michroma
 TextLabel.Text = "Currently Saving GPU"
 TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 TextLabel.TextScaled = true
-TextLabel.TextSize = 20.000
+TextLabel.TextSize = 0
 TextLabel.TextWrapped = true
 
 -- Scripts:
