@@ -34,7 +34,6 @@ function initLibrary()
 
 
         local obj = Instance.new(class)
-		obj.Transparency = 0.4
 
 
         local forcedProperties = {
@@ -335,14 +334,15 @@ function initLibrary()
         library.color = color
 
 
-        local topbar = utility.create("Frame", {
-            ZIndex = 2,
-            Size = UDim2.new(0, sizeX, 0, 26),
-            Position = utility.get_center(sizeX, sizeY),
-            BorderSizePixel = 0,
-            BackgroundColor3 = Color3.fromRGB(22, 22, 22),
-            Parent = gui
-        })
+local topbar = utility.create("Frame", {
+    ZIndex = 2,
+    Size = UDim2.new(0, sizeX, 0, 26),
+    Position = utility.get_center(sizeX, sizeY),
+    BorderSizePixel = 0,
+    BackgroundColor3 = Color3.fromRGB(22, 22, 22),
+    BackgroundTransparency = 0.4,  -- Set Transparency
+    Parent = gui
+})
 
 
         utility.drag(topbar, dragSpeed)
