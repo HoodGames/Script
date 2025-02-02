@@ -1,313 +1,143 @@
---[[ 
-    Universal Aimbot Module by Exunys 
-    © CC0 1.0 Universal (2023 - 2024)
-    For more information, visit: https://github.com/Exunys
+--[[
+MADE BY JILLIANS FUCKERS, SUCK MY DICK BITCH ASS NIGGERS!
 ]]
 
---// Cache
-local game, workspace = game, workspace
-local getrawmetatable, getmetatable, setmetatable, pcall, getgenv, next, tick = getrawmetatable, getmetatable, setmetatable, pcall, getgenv, next, tick
-local Vector2new, Vector3zero, CFramenew, Color3fromRGB, Color3fromHSV, Drawingnew, TweenInfonew = Vector2.new, Vector3.zero, CFrame.new, Color3.fromRGB, Color3.fromHSV, Drawing.new, TweenInfo.new
-local getupvalue, mousemoverel, tablefind, tableremove, stringlower, stringsub, mathclamp = debug.getupvalue, mousemoverel or (Input and Input.MouseMove), table.find, table.remove, string.lower, string.sub, math.clamp
+--[[
+MADE BY JILLIANS FUCKERS, SUCK MY DICK BITCH ASS NIGGERS!
+]]
 
--- Metatable handling (for environments without `getrawmetatable`)
-local GameMetatable
-if getrawmetatable then
-    GameMetatable = getrawmetatable(game)
-else
-    GameMetatable = {
-        __index = function(self, Index)
-            return self[Index]
-        end,
-        __newindex = function(self, Index, Value)
-            self[Index] = Value
+--[[
+MADE BY JILLIANS FUCKERS, SUCK MY DICK BITCH ASS NIGGERS!
+]]
+
+--[[
+MADE BY JILLIANS FUCKERS, SUCK MY DICK BITCH ASS NIGGERS!
+]]
+
+--[[
+MADE BY JILLIANS FUCKERS, SUCK MY DICK BITCH ASS NIGGERS!
+]]
+
+--[[
+MADE BY JILLIANS FUCKERS, SUCK MY DICK BITCH ASS NIGGERS!
+]]
+
+--[[
+MADE BY JILLIANS FUCKERS, SUCK MY DICK BITCH ASS NIGGERS!
+]]
+
+--[[
+MADE BY JILLIANS FUCKERS, SUCK MY DICK BITCH ASS NIGGERS!
+]]
+
+--[[
+MADE BY JILLIANS FUCKERS, SUCK MY DICK BITCH ASS NIGGERS!
+]]
+
+--[[
+MADE BY JILLIANS FUCKERS, SUCK MY DICK BITCH ASS NIGGERS!
+]]
+
+local ScreenGui = Instance.new("ScreenGui")
+local TextLabel = Instance.new("TextLabel")
+
+local camLockActive = false
+local targetPart
+local targetPlayer
+local Camera = Workspace.CurrentCamera
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local PredictionMultiplierBase = {Horizontal = 0.162, Vertical = 0.162}
+local PredictionSpeedModifier = 1
+
+ScreenGui.Parent = game.CoreGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+TextLabel.Parent = ScreenGui
+TextLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TextLabel.Size = UDim2.new(0.2, 0, 0.05, 0)
+TextLabel.Position = UDim2.new(0.8, 0, 0.9, 0)
+TextLabel.Visible = false
+
+function FindNearestEnemy()
+  local ClosestDistance, ClosestPlayer = math.huge, nil
+  local CenterPosition = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+
+  for _, Player in ipairs(Players:GetPlayers()) do
+    if Player ~= LocalPlayer then
+      local Character = Player.Character
+      if Character and Character:FindFirstChild("UpperTorso") and Character.Humanoid.Health > 0 then
+        local Position, IsVisibleOnViewport = Camera:WorldToViewportPoint(Character.UpperTorso.Position)
+        if IsVisibleOnViewport then
+          local Distance = (CenterPosition - Vector2.new(Position.X, Position.Y)).Magnitude
+          if Distance < ClosestDistance then
+            ClosestPlayer = Character.UpperTorso
+            ClosestDistance = Distance
+            targetPlayer = Player
+          end
         end
-    }
+      end
+    end
+  end
+
+  return ClosestPlayer, targetPlayer
 end
 
-local __index = GameMetatable.__index
-local __newindex = GameMetatable.__newindex
-local getrenderproperty, setrenderproperty = getrenderproperty or __index, setrenderproperty or __newindex
-local GetService = __index(game, "GetService")
+local function enableCamLock()
+  if not camLockActive then
+    targetPart, targetPlayer = FindNearestEnemy()
+    if targetPart then
+      camLockActive = true
+      game:GetService("StarterGui"):SetCore("SendNotification", {
+          Title = "TURNED ON NIGGER",
+          Text = "Targer Nigga: " .. targetPlayer.DisplayName,
+          Icon = "rbxassetid://...",
+      })
 
---// Services
-local RunService = GetService(game, "RunService")
-local UserInputService = GetService(game, "UserInputService")
-local TweenService = GetService(game, "TweenService")
-local Players = GetService(game, "Players")
-
---// Service Methods
-local LocalPlayer = __index(Players, "LocalPlayer")
-local Camera = __index(workspace, "CurrentCamera")
-
--- Methods to find specific objects or parts in the game
-local FindFirstChild, FindFirstChildOfClass = __index(game, "FindFirstChild"), __index(game, "FindFirstChildOfClass")
-local GetDescendants = __index(game, "GetDescendants")
-local WorldToViewportPoint = __index(Camera, "WorldToViewportPoint")
-local GetPartsObscuringTarget = __index(Camera, "GetPartsObscuringTarget")
-local GetMouseLocation = __index(UserInputService, "GetMouseLocation")
-local GetPlayers = __index(Players, "GetPlayers")
-
---// Variables
-local RequiredDistance, Typing, Running, ServiceConnections, Animation, OriginalSensitivity = 2000, false, false, {}
-local Connect, Disconnect = __index(game, "DescendantAdded").Connect
-
--- Clean up degraded functions (optional)
---[[ 
-local Degrade = false
-do 
-	xpcall(function() 
-		local TemporaryDrawing = Drawingnew("Line") 
-		getrenderproperty = getupvalue(getmetatable(TemporaryDrawing).__index, 4) 
-		setrenderproperty = getupvalue(getmetatable(TemporaryDrawing).__newindex, 4) 
-		TemporaryDrawing.Remove(TemporaryDrawing) 
-	end, function() 
-		Degrade, getrenderproperty, setrenderproperty = true, function(Object, Key) 
-			return Object[Key] 
-		end, function(Object, Key, Value) 
-			Object[Key] = Value 
-		end 
-	end) 
-	local TemporaryConnection = Connect(__index(game, "DescendantAdded"), function() end) 
-	Disconnect = TemporaryConnection.Disconnect 
-	Disconnect(TemporaryConnection) 
-end 
-]]
-
--- Check if an existing process is running
-if ExunysDeveloperAimbot and ExunysDeveloperAimbot.Exit then 
-	ExunysDeveloperAimbot:Exit() 
+      if connection then connection:Disconnect() end
+      connection = RunService.RenderStepped:Connect(function()
+        if camLockActive and targetPart and targetPart.Parent and targetPart.Parent:FindFirstChild("Humanoid") then
+          local targetPosition = targetPart.Position
+          local targetVelocity = targetPart.Velocity
+          
+          local speedMultiplier = math.clamp(targetVelocity.Magnitude / 16, 1, 2)
+          local predictedPosition = targetPosition + (targetVelocity * PredictionMultiplierBase.Horizontal * speedMultiplier) + Vector3.new(0, targetVelocity.Y * PredictionMultiplierBase.Vertical, 0)
+          local newCFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, predictedPosition), 0.4)
+          Camera.CFrame = newCFrame
+        else
+          if connection then connection:Disconnect() end
+        end
+      end)
+    end
+  end
 end
 
---// Environment Settings
-getgenv().ExunysDeveloperAimbot = {
-	DeveloperSettings = {
-		UpdateMode = "RenderStepped",
-		TeamCheckOption = "TeamColor",
-		RainbowSpeed = 1 -- Bigger = Slower
-	},
-	Settings = {
-		Enabled = true,
-		TeamCheck = false,
-		AliveCheck = true,
-		WallCheck = false,
-		OffsetToMoveDirection = false,
-		OffsetIncrement = 15,
-		Sensitivity = 0,
-		Sensitivity2 = 0,
-		LockMode = 1, -- 1 = CFrame; 2 = mousemoverel
-		LockPart = "Head", -- Body part to lock on
-		TriggerKey = Enum.UserInputType.MouseButton2,
-		Toggle = false
-	},
-	FOVSettings = {
-		Enabled = true,
-		Visible = true,
-		Radius = 150,
-		NumSides = 60,
-		Thickness = 1,
-		Transparency = 1,
-		Filled = false,
-		RainbowColor = false,
-		RainbowOutlineColor = false,
-		Color = Color3fromRGB(255, 255, 255),
-		OutlineColor = Color3fromRGB(0, 0, 0),
-		LockedColor = Color3fromRGB(255, 150, 150)
-	},
-	Blacklisted = {},
-	FOVCircleOutline = Drawingnew("Circle"),
-	FOVCircle = Drawingnew("Circle")
-}
-
-local Environment = getgenv().ExunysDeveloperAimbot
-
---// Hide FOV Circles
-setrenderproperty(Environment.FOVCircle, "Visible", false)
-setrenderproperty(Environment.FOVCircleOutline, "Visible", false)
-
--- Core functions (e.g., to get rainbow colors, fix usernames, etc.)
-local FixUsername = function(String)
-	local Result
-	for _, Value in next, GetPlayers(Players) do
-		local Name = __index(Value, "Name")
-		if stringsub(stringlower(Name), 1, #String) == stringlower(String) then
-			Result = Name
-		end
-	end
-	return Result
+local function disableCamLock()
+  if camLockActive then
+    camLockActive = false
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "TURNED OFF NIGGER",
+        Text = "Nigga Saved",
+        Icon = "rbxassetid://...",
+    })
+  end
 end
 
--- Function to generate a rainbow color
-local GetRainbowColor = function()
-	local RainbowSpeed = Environment.DeveloperSettings.RainbowSpeed
-	return Color3fromHSV(tick() % RainbowSpeed / RainbowSpeed, 1, 1)
-end
-
--- Convert 3D vector to 2D
-local ConvertVector = function(Vector)
-	return Vector2new(Vector.X, Vector.Y)
-end
-
--- Cancel the aimbot lock
-local CancelLock = function()
-	Environment.Locked = nil
-	local FOVCircle = Environment.FOVCircle
-	setrenderproperty(FOVCircle, "Color", Environment.FOVSettings.Color)
-	__newindex(UserInputService, "MouseDeltaSensitivity", OriginalSensitivity)
-
-	if Animation then
-		Animation:Cancel()
-	end
-end
-
--- Get closest player based on lock settings
-local GetClosestPlayer = function()
-	local Settings = Environment.Settings
-	local LockPart = Settings.LockPart
-	if not Environment.Locked then
-		RequiredDistance = Environment.FOVSettings.Enabled and Environment.FOVSettings.Radius or 2000
-		for _, Value in next, GetPlayers(Players) do
-			local Character = __index(Value, "Character")
-			local Humanoid = Character and FindFirstChildOfClass(Character, "Humanoid")
-
-			if Value ~= LocalPlayer and not tablefind(Environment.Blacklisted, __index(Value, "Name")) and Character and FindFirstChild(Character, LockPart) and Humanoid then
-				local PartPosition, TeamCheckOption = __index(Character[LockPart], "Position"), Environment.DeveloperSettings.TeamCheckOption
-				if Settings.TeamCheck and __index(Value, TeamCheckOption) == __index(LocalPlayer, TeamCheckOption) then continue end
-				if Settings.AliveCheck and __index(Humanoid, "Health") <= 0 then continue end
-				if Settings.WallCheck then
-					local BlacklistTable = GetDescendants(__index(LocalPlayer, "Character"))
-					for _, Value in next, GetDescendants(Character) do
-						BlacklistTable[#BlacklistTable + 1] = Value
-					end
-					if #GetPartsObscuringTarget(Camera, {PartPosition}, BlacklistTable) > 0 then continue end
-				end
-				local Vector, OnScreen, Distance = WorldToViewportPoint(Camera, PartPosition)
-				Vector = ConvertVector(Vector)
-				Distance = (GetMouseLocation(UserInputService) - Vector).Magnitude
-				if Distance < RequiredDistance and OnScreen then
-					RequiredDistance, Environment.Locked = Distance, Value
-				end
-			end
-		end
-	elseif (GetMouseLocation(UserInputService) - ConvertVector(WorldToViewportPoint(Camera, __index(__index(__index(Environment.Locked, "Character"), LockPart), "Position")))).Magnitude > RequiredDistance then
-		CancelLock()
-	end
-end
-
--- Load the settings and services
-local Load = function()
-	OriginalSensitivity = __index(UserInputService, "MouseDeltaSensitivity")
-	local Settings, FOVCircle, FOVCircleOutline, FOVSettings, Offset = Environment.Settings, Environment.FOVCircle, Environment.FOVCircleOutline, Environment.FOVSettings
-
-	-- Handle connections to services
-	ServiceConnections.RenderSteppedConnection = Connect(__index(RunService, Environment.DeveloperSettings.UpdateMode), function()
-		local OffsetToMoveDirection, LockPart = Settings.OffsetToMoveDirection, Settings.LockPart
-		if FOVSettings.Enabled and Settings.Enabled then
-			for Index, Value in next, FOVSettings do
-				if Index == "Color" then continue end
-				if pcall(getrenderproperty, FOVCircle, Index) then
-					setrenderproperty(FOVCircle, Index, Value)
-					setrenderproperty(FOVCircleOutline, Index, Value)
-				end
-			end
-			setrenderproperty(FOVCircle, "Color", (Environment.Locked and FOVSettings.LockedColor) or FOVSettings.RainbowColor and GetRainbowColor() or FOVSettings.Color)
-			setrenderproperty(FOVCircleOutline, "Color", FOVSettings.RainbowOutlineColor and GetRainbowColor() or FOVSettings.OutlineColor)
-			setrenderproperty(FOVCircleOutline, "Thickness", FOVSettings.Thickness + 1)
-			setrenderproperty(FOVCircle, "Position", GetMouseLocation(UserInputService))
-			setrenderproperty(FOVCircleOutline, "Position", GetMouseLocation(UserInputService))
-		else
-			setrenderproperty(FOVCircle, "Visible", false)
-			setrenderproperty(FOVCircleOutline, "Visible", false)
-		end
-
-		-- Aimbot lock on the closest player if enabled
-		if Running and Settings.Enabled then
-			GetClosestPlayer()
-			Offset = OffsetToMoveDirection and __index(FindFirstChildOfClass(__index(Environment.Locked, "Character"), "Humanoid"), "MoveDirection") * (mathclamp(Settings.OffsetIncrement, 1, 30) / 10) or Vector3zero
-			if Environment.Locked then
-				local LockedPosition_Vector3 = __index(__index(Environment.Locked, "Character")[LockPart], "Position")
-				local LockedPosition = WorldToViewportPoint(Camera, LockedPosition_Vector3 + Offset)
-				if Environment.Settings.LockMode == 2 then
-					mousemoverel((LockedPosition.X - GetMouseLocation(UserInputService).X) / Settings.Sensitivity2, (LockedPosition.Y - GetMouseLocation(UserInputService).Y) / Settings.Sensitivity2)
-				else
-					if Settings.Sensitivity > 0 then
-						Animation = TweenService:Create(Camera, TweenInfonew(Environment.Settings.Sensitivity, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {CFrame = CFramenew(Camera.CFrame.Position, LockedPosition_Vector3)})
-						Animation:Play()
-					else
-						__newindex(Camera, "CFrame", CFramenew(Camera.CFrame.Position, LockedPosition_Vector3 + Offset))
-					end
-					__newindex(UserInputService, "MouseDeltaSensitivity", 0)
-				end
-				setrenderproperty(FOVCircle, "Color", FOVSettings.LockedColor)
-			end
-		end
-	end)
-
-	-- Input connections (to toggle or start aiming)
-	ServiceConnections.InputBeganConnection = Connect(__index(UserInputService, "InputBegan"), function(Input)
-		local TriggerKey, Toggle = Settings.TriggerKey, Settings.Toggle
-		if Typing then return end
-		if Input.UserInputType == Enum.UserInputType.Keyboard and Input.KeyCode == TriggerKey or Input.UserInputType == TriggerKey then
-			if Toggle then
-				Running = not Running
-				if not Running then CancelLock() end
-			else
-				Running = true
-			end
-		end
-	end)
-
-	-- Input ended (to stop aiming)
-	ServiceConnections.InputEndedConnection = Connect(__index(UserInputService, "InputEnded"), function(Input)
-		local TriggerKey, Toggle = Settings.TriggerKey, Settings.Toggle
-		if Toggle or Typing then return end
-		if Input.UserInputType == Enum.UserInputType.Keyboard and Input.KeyCode == TriggerKey or Input.UserInputType == TriggerKey then
-			Running = false
-			CancelLock()
-		end
-	end)
-end
-
--- Typing check to prevent interfering with input fields
-ServiceConnections.TypingStartedConnection = Connect(__index(UserInputService, "TextBoxFocused"), function()
-	Typing = true
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+  if not gameProcessed and input.KeyCode == Enum.KeyCode.Q then
+    if camLockActive then
+      disableCamLock()
+    else
+      enableCamLock()
+    end
+  end
 end)
 
-ServiceConnections.TypingEndedConnection = Connect(__index(UserInputService, "TextBoxFocusReleased"), function()
-	Typing = false
-end)
-
--- Methods for exiting or restarting the aimbot
-function Environment.Exit(self)
-	for Index, _ in next, ServiceConnections do
-		Disconnect(ServiceConnections[Index])
-	end
-	Load = nil; ConvertVector = nil; CancelLock = nil; GetClosestPlayer = nil; GetRainbowColor = nil; FixUsername = nil
-	self.FOVCircle:Remove()
-	self.FOVCircleOutline:Remove()
-	getgenv().ExunysDeveloperAimbot = nil
-end
-
-function Environment.Restart()
-	for Index, _ in next, ServiceConnections do
-		Disconnect(ServiceConnections[Index])
-	end
-	Load()
-end
-
-function Environment.Blacklist(self, Username)
-	Username = FixUsername(Username)
-	self.Blacklisted[#self.Blacklisted + 1] = Username
-end
-
-function Environment.Whitelist(self, Username)
-	Username = FixUsername(Username)
-	local Index = tablefind(self.Blacklisted, Username)
-	tableremove(self.Blacklisted, Index)
-end
-
--- Expose the loaded environment
-Environment.Load = Load
-setmetatable(Environment, {__call = Load})
-
-return Environment
+game:GetService("StarterGui"):SetCore("SendNotification", {
+  Title = "JILCF Camlock Loaded",
+  Text = "Press 'Q' to toggle",
+})
