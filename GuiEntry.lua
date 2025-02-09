@@ -1,7 +1,6 @@
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Parent = PlayerGui
 
-    -- ✅ Background Notification Box
     local Notification = Instance.new("Frame")
     Notification.Parent = ScreenGui
     Notification.Size = UDim2.new(0.4, 0, 0.2, 0) -- Resized to fit both texts
@@ -11,7 +10,6 @@
     Notification.BorderSizePixel = 0
     Notification.Visible = true
 
-    -- ✅ "Access Granted!" Text
     local MainText = Instance.new("TextLabel")
     MainText.Parent = Notification
     MainText.Size = UDim2.new(1, 0, 0.5, 0) -- Top half of the box
@@ -24,7 +22,6 @@
     MainText.TextXAlignment = Enum.TextXAlignment.Center
     MainText.TextWrapped = true
 
-    -- ✅ "Welcome, PlayerName" Text
     local SubText = Instance.new("TextLabel")
     SubText.Parent = Notification
     SubText.Size = UDim2.new(1, 0, 0.5, 0) -- Bottom half of the box
@@ -37,7 +34,6 @@
     SubText.TextXAlignment = Enum.TextXAlignment.Center
     SubText.TextWrapped = true
 
--- ❄️ "Bliz Ware" Title (Icy Themed)
 local Title = Instance.new("TextLabel")
 Title.Parent = Notification
 Title.Size = UDim2.new(1, 0, 0.3, 0)
@@ -50,14 +46,12 @@ Title.Text = "BLIZ WARE"
 Title.TextScaled = true
 Title.TextTransparency = 1 -- Start fully invisible
 
--- ❄️ Ice Glow Effect
 local TitleGlow = Instance.new("UIStroke")
 TitleGlow.Parent = Title
 TitleGlow.Thickness = 3
 TitleGlow.Color = Color3.fromRGB(255, 255, 255) -- Lighter Blue Glow
 TitleGlow.Transparency = 1 -- Start fully invisible
 
-    -- ✅ Player Avatar (On The Right)
     local Avatar = Instance.new("ImageLabel")
     Avatar.Parent = Notification
     Avatar.Size = UDim2.new(0.25, 0, 0.8, 0)
@@ -65,7 +59,6 @@ TitleGlow.Transparency = 1 -- Start fully invisible
     Avatar.BackgroundTransparency = 1
     Avatar.Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. LocalPlayer.UserId .. "&width=420&height=420&format=png"
 
-    -- ✅ UI Corners (Rounded Edges)
     local UICorner = Instance.new("UICorner")
     UICorner.CornerRadius = UDim.new(0.1, 0)
     UICorner.Parent = Notification
@@ -73,7 +66,6 @@ TitleGlow.Transparency = 1 -- Start fully invisible
     AvatarCorner.CornerRadius = UDim.new(1, 0)
     AvatarCorner.Parent = Avatar
 
-    -- ✅ Smooth Fade-in Animation
     Notification.BackgroundTransparency = 1
     MainText.TextTransparency = 1
     SubText.TextTransparency = 1
@@ -96,7 +88,6 @@ TitleGlow.Transparency = 1 -- Start fully invisible
         ImageTransparency = 0
     })
 
-	-- ❄️ Tween Animation for Fade-In
 	local fadeInTweenTitle = TweenService:Create(Title, TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
     	TextTransparency = 0
 	})
@@ -113,10 +104,8 @@ TitleGlow.Transparency = 1 -- Start fully invisible
 	fadeInTweenTitle:Play()
 	fadeInTweenGlow:Play()
 
-    -- Wait 3 seconds before fading out
     task.wait(3)
 
-    -- ✅ Smooth Fade-out Animation
     local fadeOutTween1 = TweenService:Create(Notification, TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
         BackgroundTransparency = 1
     })
