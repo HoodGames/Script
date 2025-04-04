@@ -1,0 +1,107 @@
+local player = game.Players.LocalPlayer
+local camera = game.Workspace.CurrentCamera
+local runService = game:GetService("RunService")
+local userInputService = game:GetService("UserInputService")
+
+local aimSpeed = 0.1
+local isAimAssistEnabled = false
+local predictionFactor = 1
+local currentTarget = nil
+local smoothingFactor = 0.05
+
+local function predictTargetPosition(targetPart, deltaTime)
+    if not targetPart then return nil end
+    local adjustedPosition = targetPart.Position + Vector3.new(0, 1.25, 0)  
+    local targetVelocity = targetPart:IsA("BasePart") and targetPart.Velocity or Vector3.new()
+    
+    local localPredictionFactor = predictionFactor + (targetVelocity.Magnitude * 0.15) -- Adjust prediction based on speed
+    
+    return adjustedPosition + (targetVelocity * localPredictionFactor * deltaTime)
+end
+
+local function aimAtTarget()
+    if currentTarget and currentTarget.Parent then
+        local predictedPosition = predictTargetPosition(currentTarget, runService.RenderStepped:Wait())
+        if not predictedPosition then return end
+
+        local lookVector = (predictedPosition - camera.CFrame.Position).Unit
+        local smoothedLookVector = (1 - smoothingFactor) * lookVector + smoothingFactor * (camera.CFrame.LookVector)
+        camera.CFrame = CFrame.new(camera.CFrame.Position, camera.CFrame.Position + aimSpeed * smoothedLookVector)
+    else
+        currentTarget = nil
+        isAimAssistEnabled = false
+    end
+end
+
+local function findClosestPartToMouse()
+    local mousePos = userInputService:GetMouseLocation()
+    local closestPart = nil
+    local shortestDistance = math.huge
+
+    for _, object in pairs(game.Players:GetPlayers()) do
+        if object ~= player and object.Character then
+            local targetPart = object.Character:FindFirstChild("HumanoidRootPart")  
+
+            if targetPart then
+                local targetScreenPos, onScreen = camera:WorldToScreenPoint(targetPart.Position + Vector3.new(0, 1.5, 0))
+
+                if onScreen then
+                    local distance = (Vector2.new(targetScreenPos.X, targetScreenPos.Y) - mousePos).Magnitude
+
+                    if distance < shortestDistance then
+                        closestPart = targetPart
+                        shortestDistance = distance
+                    end
+                end
+            end
+        end
+    end
+
+    return closestPart
+end
+
+local function onKeyPress(input, gameProcessedEvent)
+    if not gameProcessedEvent then
+        if input.KeyCode == Enum.KeyCode.Q then
+            isAimAssistEnabled = not isAimAssistEnabled
+            if isAimAssistEnabled then
+                if not currentTarget then 
+                    currentTarget = findClosestPartToMouse()
+                end
+            else
+                currentTarget = nil
+            end
+        end
+    end
+end
+
+local function onCharacterAdded(character)
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.Died:Connect(function()
+            if currentTarget and currentTarget.Parent == character then
+                currentTarget = nil
+                isAimAssistEnabled = false
+            end
+        end)
+    end
+end
+
+userInputService.InputBegan:Connect(onKeyPress)
+player.CharacterAdded:Connect(onCharacterAdded)
+
+for _, existingPlayer in pairs(game.Players:GetPlayers()) do
+    if existingPlayer ~= player then
+        existingPlayer.CharacterAdded:Connect(onCharacterAdded)
+    end
+end
+
+game.Players.PlayerAdded:Connect(function(newPlayer)
+    newPlayer.CharacterAdded:Connect(onCharacterAdded)
+end)
+
+runService.RenderStepped:Connect(function(deltaTime)
+    if isAimAssistEnabled and currentTarget then
+        aimAtTarget()
+    end
+end)
