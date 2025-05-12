@@ -265,3 +265,23 @@ while true do
     task.wait(1)
     VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
 end)
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local VirtualUser = game:GetService("VirtualUser")
+
+local GC = getconnections or get_signal_cons
+if GC then
+	for _, connection in pairs(GC(LocalPlayer.Idled)) do
+		if connection.Disable then
+			connection:Disable()
+		elseif connection.Disconnect then
+			connection:Disconnect()
+		end
+	end
+else
+	LocalPlayer.Idled:Connect(function()
+		VirtualUser:CaptureController()
+		VirtualUser:ClickButton2(Vector2.new())
+	end)
+end
