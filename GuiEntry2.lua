@@ -47,7 +47,7 @@ Title.BackgroundTransparency = 1
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.Fantasy
 Title.TextSize = 45
-Title.Text = "BLIZ WARE"
+Title.Text = "Kaii"
 Title.TextScaled = true
 Title.TextTransparency = 1 
 
