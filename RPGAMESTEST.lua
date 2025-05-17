@@ -1,33 +1,43 @@
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer or Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
+local LocalPlayer = Players.LocalPlayer
 
+-- Fetch valid keys remotely
 local success, validKeys = pcall(function()
-   return loadstring(game:HttpGet("https://raw.githubusercontent.com/HoodGames/Script/refs/heads/main/Yek.lua"))()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/HoodGames/Script/main/Yek.lua"))()
 end)
 
+-- If failed to fetch keys
 if not success or type(validKeys) ~= "table" then
-   task.wait(1)
-   pcall(function()
-       LocalPlayer:Kick("Access Denied: .gg/trenchkid and go to kwarto ni kaii")
-   end)
-   return
+    LocalPlayer:Kick("Acess Denied: .gg/trenchkid and go join kwarto ni kaii")
+    return
 end
 
+-- Get key from executor environment
 local inputKey = getgenv().kaii
+
+-- Validate key
 local function isValidKey(key)
-   for _, k in ipairs(validKeys) do
-      if k == key then return true end
-   end
-   return false
+    for _, v in ipairs(validKeys) do
+        if key == v then return true end
+    end
+    return false
 end
 
+-- Kick if key is invalid or missing
 if not inputKey or not isValidKey(inputKey) then
-   task.wait(1)
-   pcall(function()
-       LocalPlayer:Kick("Access Denied: .gg/trenchkid and go to kwarto ni kaii")
-   end)
-   return
+    LocalPlayer:Kick("Access Denied: .gg/trenchkid and go join kwarto ni kaii")
+    return
 end
+
+-- ✅ Key is valid, continue to load the hub
+local hubSuccess, err = pcall(function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/HoodGames/Script/main/GuiEntry.lua"))()
+end)
+
+if not hubSuccess then
+    warn("Hub script failed to load:", err)
+end
+
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
