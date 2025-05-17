@@ -1,12 +1,15 @@
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+local LocalPlayer = Players.LocalPlayer or Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
 
 local success, validKeys = pcall(function()
    return loadstring(game:HttpGet("https://raw.githubusercontent.com/HoodGames/Script/refs/heads/main/Yek.lua"))()
 end)
 
 if not success or type(validKeys) ~= "table" then
-       LocalPlayer:Kick("Acess Denied: .gg/trenchkid and go to kwarto ni kaii")
+   task.wait(1)
+   pcall(function()
+       LocalPlayer:Kick("Access Denied: .gg/trenchkid and go to kwarto ni kaii")
+   end)
    return
 end
 
@@ -19,7 +22,10 @@ local function isValidKey(key)
 end
 
 if not inputKey or not isValidKey(inputKey) then
-       LocalPlayer:Kick("Access Denied: Join .gg/trenchkid and go to kwarto ni kaii")
+   task.wait(1)
+   pcall(function()
+       LocalPlayer:Kick("Access Denied: .gg/trenchkid and go to kwarto ni kaii")
+   end)
    return
 end
 
