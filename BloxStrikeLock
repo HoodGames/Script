@@ -1,0 +1,128 @@
+--// Cache
+local select = select
+local pcall, getgenv, next, Vector2, mathclamp, type, mousemoverel = select(1, pcall, getgenv, next, Vector2.new, math.clamp, type, (mousemoverel or (Input and Input.MouseMove) or (syn and syn.mouse_move)))
+
+--// Preventing Multiple Processes
+pcall(function()
+    getgenv().Aimbot.Functions:Exit()
+end)
+
+--// Environment
+getgenv().Aimbot = {}
+local Environment = getgenv().Aimbot
+
+--// Services
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+--// Variables
+local Typing, Running, ServiceConnections = false, false, {}
+
+--// Script Settings
+Environment.Settings = {
+    Enabled = true,
+    TeamCheck = false,
+    AliveCheck = true,
+    WallCheck = false,
+    Sensitivity = 0.9, -- Adjust this (0.1 to 1) if it's too fast/slow
+    TriggerKey = "F", 
+    Toggle = true,   
+    LockPart = "Head"
+}
+
+--// Functions
+local function CancelLock()
+    Environment.Locked = nil
+end
+
+local function GetClosestPlayer()
+    --// Sticky Lock: Keep current target if valid
+    if Environment.Locked then
+        local Target = Environment.Locked
+        local Char = Target.Character
+        local Part = Char and Char:FindFirstChild(Environment.Settings.LockPart)
+        local Hum = Char and Char:FindFirstChildOfClass("Humanoid")
+        
+        if not Char or not Part or not Hum or (Environment.Settings.AliveCheck and Hum.Health <= 0) then
+            CancelLock()
+        elseif Environment.Settings.TeamCheck and Target.Team == LocalPlayer.Team then
+            CancelLock()
+        end
+        
+        if Environment.Locked then return end
+    end
+
+    --// Find new target
+    local MaxDist = math.huge
+    for _, v in next, Players:GetPlayers() do
+        if v ~= LocalPlayer and v.Character then
+            local Part = v.Character:FindFirstChild(Environment.Settings.LockPart)
+            if Part then
+                if Environment.Settings.AliveCheck and v.Character:FindFirstChildOfClass("Humanoid").Health <= 0 then continue end
+                if Environment.Settings.TeamCheck and v.Team == LocalPlayer.Team then continue end
+
+                local Pos, OnScreen = Camera:WorldToViewportPoint(Part.Position)
+                if OnScreen then
+                    local MousePos = UserInputService:GetMouseLocation()
+                    local Dist = (Vector2(MousePos.X, MousePos.Y) - Vector2(Pos.X, Pos.Y)).Magnitude
+                    
+                    if Dist < MaxDist then
+                        MaxDist = Dist
+                        Environment.Locked = v
+                    end
+                end
+            end
+        end
+    end
+end
+
+--// Main Execution
+local function Load()
+    ServiceConnections.RenderStepped = RunService.RenderStepped:Connect(function()
+        if Running and Environment.Settings.Enabled then
+            GetClosestPlayer()
+
+            if Environment.Locked and Environment.Locked.Character then
+                local TargetPart = Environment.Locked.Character:FindFirstChild(Environment.Settings.LockPart)
+                if TargetPart then
+                    local TargetPos, OnScreen = Camera:WorldToViewportPoint(TargetPart.Position)
+                    if OnScreen then
+                        local MousePos = UserInputService:GetMouseLocation()
+                        -- Calculate relative movement needed
+                        local MoveX = (TargetPos.X - MousePos.X) * Environment.Settings.Sensitivity
+                        local MoveY = (TargetPos.Y - MousePos.Y) * Environment.Settings.Sensitivity
+                        
+                        -- Move the mouse toward the head
+                        mousemoverel(MoveX, MoveY)
+                    end
+                end
+            end
+        end
+    end)
+
+    -- Toggle Input
+    ServiceConnections.Input = UserInputService.InputBegan:Connect(function(Input)
+        if not Typing then
+            if Input.KeyCode == Enum.KeyCode[Environment.Settings.TriggerKey] or Input.UserInputType == Enum.UserInputType[Environment.Settings.TriggerKey] then
+                Running = not Running
+                if not Running then CancelLock() end
+            end
+        end
+    end)
+
+    ServiceConnections.Focus = UserInputService.TextBoxFocused:Connect(function() Typing = true end)
+    ServiceConnections.Unfocus = UserInputService.TextBoxFocusReleased:Connect(function() Typing = false end)
+end
+
+--// Management
+Environment.Functions = {
+    Exit = function()
+        for _, v in next, ServiceConnections do v:Disconnect() end
+        getgenv().Aimbot = nil
+    end
+}
+
+Load()
