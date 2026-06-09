@@ -56,7 +56,7 @@ titleLabel.Position = UDim2.new(0.25, 0, 0, 0)
 titleLabel.Size = UDim2.new(0, 95, 0, 24)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Font = Enum.Font.Merriweather
-titleLabel.Text = "ANTI AFK BY KAII | (@binggrae_.)"
+titleLabel.Text = "ANTI AFK BY ZEID | (@gf0e)"
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleLabel.TextSize = 13.75
 
