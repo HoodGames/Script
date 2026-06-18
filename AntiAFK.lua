@@ -19,12 +19,14 @@ end
 getgenv().AntiAfkExecuted = true
 
 -- Wait until fully loaded
-repeat wait() until game:IsLoaded() and game.Players and game.Players.LocalPlayer and game.Players.LocalPlayer.Character
+repeat task.wait() until game:IsLoaded() and game.Players and game.Players.LocalPlayer and game.Players.LocalPlayer.Character
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local VirtualUser = game:service'VirtualUser'
+local VirtualUser = game:GetService("VirtualUser")
+
+local AntiAfkConn -- Forward declaration for cleanup
 
 -- UI Setup
 local zeidontop = Instance.new("ScreenGui", game.CoreGui)
@@ -48,6 +50,7 @@ closeButton.TextColor3 = Color3.fromRGB(255, 0, 0)
 closeButton.TextSize = 20
 closeButton.MouseButton1Click:Connect(function()
     getgenv().AntiAfkExecuted = false
+    if AntiAfkConn then AntiAfkConn:Disconnect() end -- Clean up connection!
     zeidontop:Destroy()
 end)
 
@@ -116,28 +119,30 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- Anti-AFK
-local AntiAfkConn = Players.LocalPlayer.Idled:Connect(function()
+-- Fixed Anti-AFK Mechanism
+AntiAfkConn = Players.LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
-    VirtualUser:ClickButton2(Vector2.new())
+    VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+    task.wait(0.5)
+    VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
 
 -- FPS Counter
-local frames, lastTime = 0, tick()
+local frames, lastTime = 0, os.clock()
 RunService.RenderStepped:Connect(function()
     frames += 1
-    if tick() - lastTime >= 1 then
+    if os.clock() - lastTime >= 1 then
         fpsLabel.Text = "FPS: " .. frames
         frames = 0
-        lastTime = tick()
+        lastTime = os.clock()
     end
 end)
 
 -- Ping Counter
-spawn(function()
+task.spawn(function()
     while getgenv().AntiAfkExecuted and zeidontop.Parent do
         local pingStat = game:GetService("Stats"):FindFirstChild("PerformanceStats") and game.Stats.PerformanceStats:FindFirstChild("Ping")
         if pingStat then pingLabel.Text = "Ping: " .. math.floor(pingStat:GetValue()) end
-        wait(1)
+        task.wait(1)
     end
 end)
