@@ -1,0 +1,21 @@
+return {
+    [4197076008] = true,
+    [0] = true,
+    [0] = true,
+    [0] = true,
+    [0] = true,
+    [0] = true,
+    [0] = true,
+    [0] = true,
+    [0] = true,
+    [0] = true,
+    [0] = true,
+    [0] = true,
+    [0] = true,
+    [0] = true,
+    [0] = true,
+    [0] = true,
+    [0] = true,
+    [0] = true,
+    [0] = true
+}
