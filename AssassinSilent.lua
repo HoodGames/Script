@@ -21,7 +21,7 @@ LocalPlayer.OnTeleport:Connect(function()
     if KeepOnTeleport and not TeleportCheck and queueteleport then
         TeleportCheck = true
         queueteleport([[
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/HoodGames/Script/refs/heads/main/AssassinSilent"))()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/HoodGames/Script/refs/heads/main/AssassinSilent.lua"))()
         ]])
     end
 end)
