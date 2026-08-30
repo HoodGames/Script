@@ -8,6 +8,25 @@ local TeleportService = game:GetService("TeleportService")
 
 local LocalPlayer = Players.LocalPlayer
 
+-- ==================== AUTO EXECUTE ON REJOIN / SERVER HOP ====================
+local queueteleport = (syn and syn.queue_on_teleport) 
+    or queue_on_teleport 
+    or (fluxus and fluxus.queue_on_teleport)
+    or (getgenv() and getgenv().queue_on_teleport)
+
+local KeepOnTeleport = true
+
+local TeleportCheck = false
+LocalPlayer.OnTeleport:Connect(function()
+    if KeepOnTeleport and not TeleportCheck and queueteleport then
+        TeleportCheck = true
+        queueteleport([[
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/HoodGames/Script/refs/heads/main/AssassinSilent"))()
+        ]])
+    end
+end)
+-- ===========================================================================
+
 local Window = Rayfield:CreateWindow({
     Name = "Silent Assassin by /HOEZA",
     LoadingTitle = "Silent Assassin",
@@ -177,6 +196,21 @@ Tab:CreateButton({
 })
 
 Tab:CreateDivider()
+
+Tab:CreateToggle({
+    Name = "Keep Script on Teleport / Rejoin",
+    CurrentValue = true,
+    Flag = "KeepOnTeleport",
+    Callback = function(Value)
+        KeepOnTeleport = Value
+        Rayfield:Notify({
+            Title = "Auto Execute",
+            Content = Value and "Script will re-execute after teleport/rejoin" or "Script will NOT re-execute after teleport",
+            Duration = 3,
+            Image = 4432090463,
+        })
+    end,
+})
 
 Tab:CreateButton({
     Name = "Destroy UI",
