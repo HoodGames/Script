@@ -56,6 +56,22 @@ local Old; Old = hookfunction(getrenv().debug.info, newcclosure(function(...)
 end))
 setthreadidentity(7)
 
+-- Clean old Rayfield if it exists
+pcall(function()
+    if getgenv().Rayfield then
+        getgenv().Rayfield:Destroy()
+    end
+end)
+
+-- Also destroy any leftover ScreenGuis from previous load
+pcall(function()
+    for _, gui in pairs(game:GetService("CoreGui"):GetChildren()) do
+        if gui.Name:find("Rayfield") or gui.Name:find("Pinoy") or gui.Name:find("Big Hub") then
+            gui:Destroy()
+        end
+    end
+end)
+
 local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/HoodGames/Script/refs/heads/main/PRPSLOADERehu"))()
 Rayfield:LoadConfiguration()
 
